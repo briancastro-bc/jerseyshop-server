@@ -1,0 +1,109 @@
+from fastapi import Depends
+
+from fastapi_utils.cbv import cbv
+from fastapi_utils.inferring_router import InferringRouter
+from sqlalchemy.orm import Session
+
+from app.core.http import HttpResponseBadRequest, HttpResponseCreated, HttpResponseOK, HttpResponseUnauthorized
+from app.core.schemas import User
+from app.common.services import AuthService, JwtService, EmailService
+from app.common.models import UserCreate, UserBase
+from app.database import get_db
+
+import datetime
+
+router: InferringRouter = InferringRouter()
+
+@cbv(router)
+class AuthController:
+    
+    def __init__(self) -> None:
+        self.auth = AuthService()
+        self.email = EmailService()
+        self.message_format = """
+            <center>
+                <div style="padding: 0%;
+                margin: 0%;
+                width: 75%;
+                height: 100%;
+                border:1px solid rgba(0,0,0,0.25);
+                padding: 24px;
+                border-radius: 25px;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;"
+                >
+                <img style="width: 75%;
+                            float: left;
+                            margin-left: 16%;"
+                src="https://i.imgur.com/ezOUjf5.png" alt="Company logo">
+                <br style="clear: both;">
+                <center>
+                <h1 style="font-weight: 400;">Hola <strong>{0}</strong></h1> <h2 style="font-weight: 400; font-size:24px;"><br>¡Gracias por registrarte en Jersey Shop!</h2>
+                <h2 style="font-weight: 400;">Sólo falta un último paso, y, con esto, podrás acceder a las <strong>compras online</strong> y <strong>contenido único para tí</strong> <br><br><a
+                    style="color: white;
+                        padding: 10px;
+                        border-radius: 50px;
+                        background-color: rgb(10, 137, 255);
+                        font-style: none;
+                        text-decoration: none;
+                        font-size: 1.3rem;"
+                    href="http://localhost:4000/api/auth/verify_account?token={1}">Verificar cuenta</a>
+                </h2>
+                <h3>Estoy probando el envío de emails :)</h3>
+                </center>
+            </div>
+            </center>
+        """
+    
+    @router.post('/signup', response_model=UserCreate, status_code=201)
+    async def signup(self, user: UserCreate, db: Session=Depends(get_db)):
+        user: User = self.auth.register(user, db)
+        if user is None:
+            return HttpResponseBadRequest({
+                "status": "fail",
+                "data": {
+                    "message": "El correo electronico ya se encuentra registrado"
+                }
+            }).response()
+        access_token: str = JwtService.encode(
+            payload={
+                "iss": "jerseyshop.com",
+                "sub": user.uid,
+                "iat": datetime.datetime.utcnow(),
+                "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=15)
+            },
+            encrypt=True
+        )
+        await self.email.send_email([user.email], "Bienvenido: verifica tu cuenta", message=self.message_format.format(user.name, access_token), format='html')
+        return HttpResponseCreated({
+            "status": "success",
+            "data": {
+                "message": "Gracias por hacer parte de Jersey Shop. Te damos la bienvenida!",
+                "access_token": access_token
+            }
+        }).response()
+        
+    @router.post('/login', response_model=UserBase, status_code=200)
+    async def login(self, user: UserBase, db: Session=Depends(get_db)):
+        user: User = self.auth.login(user, db)
+        if user is None:
+            return HttpResponseUnauthorized({
+                "status": "fail",
+                "data": {
+                    "message": "Las credenciales de acceso son incorrectas"
+                }
+            }).response()
+        access_token: str = JwtService.encode(
+            payload={
+                "iss": "jerseyshop.com",
+                "sub": user.uid,
+                "iat": datetime.datetime.utcnow(),
+                "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=15)
+            },
+            encrypt=True
+        )
+        return HttpResponseOK({
+            "status": "success",
+            "data": {
+                "access_token": access_token
+            }
+        }).response()
