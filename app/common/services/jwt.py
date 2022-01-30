@@ -1,5 +1,4 @@
 from typing import Dict, Any, Optional
-from functools import wraps
 
 from authlib.jose import jwt, errors 
 from authlib.common.encoding import to_bytes, to_unicode
@@ -53,10 +52,3 @@ class JwtService:
             return dict(message="Token inválido")
         except errors.DecodeError:
             return dict(message="Error al decodificar el token")
-        
-    @classmethod
-    async def verify_access_token(validate_account: bool=False):
-        def _verify_access_token(f):
-            @wraps(f)
-            def wrapper(*args, **kwargs):
-                ...

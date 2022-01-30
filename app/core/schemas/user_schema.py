@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, String, Date, Boolean, TIMESTAMP, Table, ForeignKey, Integer
+from sqlalchemy import Column, String, Date, DateTime, Boolean, TIMESTAMP, Table, ForeignKey, Integer
 from sqlalchemy.orm import relationship, backref
 from fastapi_utils.guid_type import GUID
 
@@ -26,7 +26,7 @@ class User(Base):
     password = Column(String(450), nullable=True)
     name = Column(String(40), nullable=False)
     last_name = Column(String(60), nullable=False)
-    birthday = Column(Date, nullable=False)
+    birthday = Column(DateTime, nullable=False)
     is_verify = Column(Boolean, default=False)
     accept_advertising = Column(Boolean, default=False)
     accept_terms = Column(Boolean, default=False)

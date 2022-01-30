@@ -9,6 +9,7 @@ from app.routers import auth
 def create_application():
     
     # Create all tables in the database.
+    # metadata.drop_all(bind=engine)
     metadata.create_all(bind=engine)
     
     _app = FastAPI(

@@ -1,5 +1,5 @@
 from typing import Optional, List
-from pydantic import validator
+from pydantic import BaseModel, validator
 
 from fastapi import HTTPException
 
@@ -11,10 +11,10 @@ from .group import Group
 import datetime
 
 class UserBase(APIModel):
-    email_address: str
+    email: str
     password: str
     
-    @validator('email_address', pre=True, always=True)
+    @validator('email', pre=True, always=True)
     def email_contain_at_and_dot(cls, v: str):
         if '@' not in v:
             raise HTTPException(status_code=400, detail="Dirección de correo electrónico inválida")
@@ -36,7 +36,7 @@ class UserBase(APIModel):
 class UserCreate(UserBase):
     name: str
     last_name: str
-    birthday: datetime.date
+    birthday: datetime.datetime
     accept_advertising: Optional[bool]
     accept_terms: Optional[bool]
     
@@ -49,6 +49,12 @@ class UserModel(UserCreate):
     created_at: datetime.datetime
     groups: List[Group]
     permissions: List[Permission]
+    
+    class Config:
+        orm_mode = True
+
+class UserRecovery(BaseModel):
+    email: str
     
     class Config:
         orm_mode = True

@@ -1,4 +1,4 @@
-from fastapi import Depends
+from fastapi import Depends 
 
 from fastapi_utils.cbv import cbv
 from fastapi_utils.inferring_router import InferringRouter
@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.core.http import HttpResponseBadRequest, HttpResponseCreated, HttpResponseOK, HttpResponseUnauthorized
 from app.core.schemas import User
 from app.common.services import AuthService, JwtService, EmailService
-from app.common.models import UserCreate, UserBase
+from app.common.models import UserCreate, UserBase, UserRecovery
 from app.database import get_db
 
 import datetime
@@ -46,9 +46,8 @@ class AuthController:
                         font-style: none;
                         text-decoration: none;
                         font-size: 1.3rem;"
-                    href="http://localhost:4000/api/auth/verify_account?token={1}">Verificar cuenta</a>
+                    href="http://localhost:8000/auth/verify_account?token={1}">Verificar cuenta</a>
                 </h2>
-                <h3>Estoy probando el envío de emails :)</h3>
                 </center>
             </div>
             </center>
@@ -105,5 +104,83 @@ class AuthController:
             "status": "success",
             "data": {
                 "access_token": access_token
+            }
+        }).response()
+    
+    @router.get('/verifyAccount', status_code=200)
+    async def verify_account(self, token: str=None, db: Session=Depends(get_db)):
+        decoded = JwtService.decode(encoded=token, validate=False)
+        db_user = db.query(User).filter_by(uid=decoded['uid']).first()
+        if db_user:
+            if not db_user.is_verify:
+                db_user.is_verify = True
+                db.commit()
+                return HttpResponseOK({
+                    "status": "success",
+                    "data": {
+                        "message": "Tu cuenta ha sido verificada"
+                    }
+                }).response()
+            return HttpResponseBadRequest({
+                "status": "fail",
+                "data": {
+                    "message": "Tu cuenta ya esta verificada"
+                }
+            }).response()
+        return HttpResponseBadRequest({
+            "status": "fail",
+            "data": {
+                "message": "La cuenta del usuario es inválida o no existe"
+            }
+        }).response()
+    
+    @router.post('/passwordRecovery', status_code=201)
+    async def password_recovery(self, user: UserRecovery, db: Session=Depends(get_db)):
+        user: list = self.auth.password_recovery(email=user.email, db=db)
+        if user is None:
+            return HttpResponseBadRequest({
+                "status": "fail",
+                "data": {
+                    "message": "No hay ninguna cuenta registrada con el correo electrónico indicado"
+                }
+            }).response()
+        message_format = """
+                <center>
+                    <div style="padding: 0%;
+                    margin: 0%;
+                    width: 75%;
+                    height: 100%;
+                    border:1px solid rgba(0,0,0,0.25);
+                    padding: 24px;
+                    border-radius: 25px;
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;"
+                    >
+                    <img style="width: 75%;
+                                float: left;
+                                margin-left: 16%;"
+                    src="https://i.imgur.com/ezOUjf5.png" alt="Company logo">
+                    <br style="clear: both;">
+                    <center>
+                    <h1 style="font-weight: 400;">Hola <strong>{0}</strong></h1> <h2 style="font-weight: 400; font-size:24px;"><br>¿Parece que intentas recuperar tú contraseña?</h2>
+                    <h2 style="font-weight: 400;">A continuación, creamos una nueva para tí <br><br>
+                        <span
+                        style="color: white;
+                            padding: 10px;
+                            border-radius: 0;
+                            background-color: rgb(10, 137, 255);
+                            font-style: none;
+                            text-decoration: none;
+                            font-size: 1.3rem;"
+                        ">{1}</span>
+                    </h2>
+                    </center>
+                </div>
+                </center>
+            """.format(user[0].name, user[1])
+        await self.email.send_email([user[0].email], "Recuperación: restablecimiento de contraseña", message=message_format, format='html')
+        return HttpResponseCreated({
+            "status": "success",
+            "data": {
+                "message": "Hemos enviado un email de confirmación"
             }
         }).response()
