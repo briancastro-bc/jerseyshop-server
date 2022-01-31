@@ -35,8 +35,8 @@ class JwtService:
     def decode(cls, encoded: str, validate: Optional[bool] = None):
         key: str = FileService.getRSAKey(RSAKeyType.PRIVATE.value)
         encoded = to_bytes(encoded)
-        dot_count = encoded.count('.')
-        if dot_count == 4:
+        dot_count = encoded.count(b'.')
+        if dot_count == 2:
             key = FileService.getRSAKey(RSAKeyType.PUBLIC.value)
         if key is None:
             return dict(message="No se ha provisto una llave firmada (RSA)")

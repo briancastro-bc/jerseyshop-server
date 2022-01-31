@@ -2,9 +2,12 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
+from app.common.namespaces import ChatNamespace
 from app.database import metadata, engine, database
 
 from app.routers import auth
+
+import socketio
 
 def create_application():
     
@@ -25,9 +28,12 @@ def create_application():
         allow_headers=["*"],
     )
     
+    
     return _app
 
+io = socketio.AsyncServer(logger=True, cors_allowed_origins=[str(origin) for origin in settings.BACKEND_CORS_ORIGINS], async_mode='asgi', ping_timeout=30000)
 app = create_application()
+io_app = socketio.ASGIApp(io, app)
 
 @app.on_event('startup')
 async def startup():
@@ -38,3 +44,6 @@ async def shutdown():
     await database.disconnect()
 
 app.include_router(auth.router, prefix='/auth')
+
+# Register socketio namespaces
+io.register_namespace(ChatNamespace())

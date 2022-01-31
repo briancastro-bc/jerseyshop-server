@@ -46,7 +46,7 @@ class AuthController:
                         font-style: none;
                         text-decoration: none;
                         font-size: 1.3rem;"
-                    href="http://localhost:8000/auth/verify_account?token={1}">Verificar cuenta</a>
+                    href="http://localhost:8000/auth/verifyAccount?token={1}">Verificar cuenta</a>
                 </h2>
                 </center>
             </div>
@@ -108,9 +108,9 @@ class AuthController:
         }).response()
     
     @router.get('/verifyAccount', status_code=200)
-    async def verify_account(self, token: str=None, db: Session=Depends(get_db)):
+    async def verify_account(self, token: str, db: Session=Depends(get_db)):
         decoded = JwtService.decode(encoded=token, validate=False)
-        db_user = db.query(User).filter_by(uid=decoded['uid']).first()
+        db_user = db.query(User).filter_by(uid=decoded['sub']).first()
         if db_user:
             if not db_user.is_verify:
                 db_user.is_verify = True
