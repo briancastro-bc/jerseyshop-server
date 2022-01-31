@@ -1,6 +1,7 @@
 from fastapi import HTTPException
 
-from sqlalchemy.orm import Session
+from sqlalchemy import select, text
+from sqlalchemy.ext.asyncio import AsyncSession
 from passlib.context import CryptContext
 
 from app.common.models import UserCreate, UserBase
@@ -11,8 +12,9 @@ class AuthService:
     def __init__(self) -> None:
         self.__password_ctx: CryptContext = CryptContext(schemes=["bcrypt"], deprecated="auto")
     
-    def register(self, user: UserCreate, db: Session):
-        db_user = db.query(User).filter_by(email=user.email).first()
+    async def register(self, user: UserCreate, db: AsyncSession):
+        query = await db.execute(select([User.email]).where(User.email == user.email))
+        db_user = query.scalars().first()
         if not db_user or db_user is None:
             hash_password: str = self._get_password_hash(user.password)
             try:
@@ -26,8 +28,7 @@ class AuthService:
                     accept_terms=user.accept_terms
                 )
                 db.add(new_user)
-                db.commit()
-                # db.refresh(new_user)
+                await db.commit()
                 return new_user
             except Exception as e:
                 raise HTTPException(status_code=400, detail={
@@ -39,8 +40,10 @@ class AuthService:
                 })
         return None
     
-    def login(self, user: UserBase, db: Session):
-        db_user = db.query(User).filter_by(email=user.email).first()
+    async def login(self, user: UserBase, db: AsyncSession):
+        query = await db.execute(select([User.email, User.password]).where(User.email == user.email))
+        db_user = query.fetchone()
+        print(db_user)
         if db_user:
             verify_password = self._verify_password(user.password, db_user.password)
             if verify_password:
@@ -51,8 +54,8 @@ class AuthService:
     def verify_account(self):
         ...
         
-    def password_recovery(self, email: str, db: Session):
-        db_user = db.query(User).filter_by(email=email).first()
+    async def password_recovery(self, email: str, db: AsyncSession):
+        db_user = await db.query(User).filter_by(email=email).first()
         if db_user:
             new_password: str = self._create_new_password()
             hash_password = self._get_password_hash(new_password)

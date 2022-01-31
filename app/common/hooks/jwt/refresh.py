@@ -7,11 +7,11 @@ from app.common.services import JwtService
 
 import time, datetime
 
-def refresh(authorization: str=Header(None)):
+def refresh(Authorization: str=Header(None)):
     def _refresh_token(f):
         @wraps(f)
         def wrapper(*args, **kwargs):
-            current_token: str = authorization.split(' ')[1]
+            current_token: str = Authorization.split(' ')[1]
             decoded = JwtService.decode(encoded=current_token, validate=True)
             # Token expired
             if type(decoded) is dict:

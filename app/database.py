@@ -1,8 +1,9 @@
 from typing import Dict, Any
 
 from databases import Database
-from sqlalchemy import create_engine, MetaData
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy import MetaData
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.ext.declarative import as_declarative, declared_attr
 
 from app.core.config import settings
@@ -18,8 +19,8 @@ conventions: Dict[str, Any] = {
 # Define asynchronous database.
 database = Database(settings.DATABASE_URI)
 metadata = MetaData(naming_convention=conventions)
-engine = create_engine(settings.DATABASE_URI, pool_pre_ping=True)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+engine = create_async_engine(settings.DATABASE_URI, echo=True)
+async_session = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession, autocommit=False, autoflush=False)
 
 @as_declarative(metadata=metadata)
 class Base:
@@ -27,10 +28,16 @@ class Base:
     @declared_attr
     def __tablename__(cls) -> str:
         return cls.__name__.lower()
+    
+async def init_models():
+    async with engine.begin() as conn:
+        #await conn.run_sync(Base.metadata.drop_all)
+        await conn.run_sync(Base.metadata.create_all)
 
-def get_db():
-    db: Session = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+async def get_session() -> AsyncSession:
+    async with async_session() as session:
+        try:
+            yield session
+        finally:
+            await session.close()
+        

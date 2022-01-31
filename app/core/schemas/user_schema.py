@@ -21,7 +21,7 @@ user_permissions = Table('user_permissions',
 
 class User(Base):
     __tablename__ = "users"
-    uid = Column(String(36), primary_key=True, nullable=False, default=uuid.uuid4())
+    uid = Column(String(36), primary_key=True, nullable=False, default=str(uuid.uuid4()))
     email = Column(String(70), unique=True, nullable=False)
     password = Column(String(450), nullable=True)
     name = Column(String(40), nullable=False)

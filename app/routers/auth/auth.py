@@ -2,13 +2,13 @@ from fastapi import Depends
 
 from fastapi_utils.cbv import cbv
 from fastapi_utils.inferring_router import InferringRouter
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.http import HttpResponseBadRequest, HttpResponseCreated, HttpResponseOK, HttpResponseUnauthorized
 from app.core.schemas import User
 from app.common.services import AuthService, JwtService, EmailService
 from app.common.models import UserCreate, UserBase, UserRecovery
-from app.database import get_db
+from app.database import get_session
 
 import datetime
 
@@ -54,8 +54,8 @@ class AuthController:
         """
     
     @router.post('/signup', response_model=UserCreate, status_code=201)
-    async def signup(self, user: UserCreate, db: Session=Depends(get_db)):
-        user: User = self.auth.register(user, db)
+    async def signup(self, user: UserCreate, db: AsyncSession=Depends(get_session)):
+        user: User = await self.auth.register(user, db)
         if user is None:
             return HttpResponseBadRequest({
                 "status": "fail",
@@ -82,8 +82,8 @@ class AuthController:
         }).response()
         
     @router.post('/login', response_model=UserBase, status_code=200)
-    async def login(self, user: UserBase, db: Session=Depends(get_db)):
-        user: User = self.auth.login(user, db)
+    async def login(self, user: UserBase, db: AsyncSession=Depends(get_session)):
+        user: User = await self.auth.login(user, db)
         if user is None:
             return HttpResponseUnauthorized({
                 "status": "fail",
@@ -108,9 +108,9 @@ class AuthController:
         }).response()
     
     @router.get('/verifyAccount', status_code=200)
-    async def verify_account(self, token: str, db: Session=Depends(get_db)):
+    async def verify_account(self, token: str, db: AsyncSession=Depends(get_session)):
         decoded = JwtService.decode(encoded=token, validate=False)
-        db_user = db.query(User).filter_by(uid=decoded['sub']).first()
+        db_user = await db.query(User).filter_by(uid=decoded['sub']).first()
         if db_user:
             if not db_user.is_verify:
                 db_user.is_verify = True
@@ -135,8 +135,8 @@ class AuthController:
         }).response()
     
     @router.post('/passwordRecovery', status_code=201)
-    async def password_recovery(self, user: UserRecovery, db: Session=Depends(get_db)):
-        user: list = self.auth.password_recovery(email=user.email, db=db)
+    async def password_recovery(self, user: UserRecovery, db: AsyncSession=Depends(get_session)):
+        user: list = await self.auth.password_recovery(email=user.email, db=db)
         if user is None:
             return HttpResponseBadRequest({
                 "status": "fail",
