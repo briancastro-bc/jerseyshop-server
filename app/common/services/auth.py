@@ -41,6 +41,7 @@ class AuthService:
         return None
     
     async def login(self, user: UserBase, db: AsyncSession):
+        #TODO: // Terminar de arreglar las consultas la base de dates por medio de la asincronia
         query = await db.execute(select([User.email, User.password]).where(User.email == user.email))
         db_user = query.fetchone()
         print(db_user)
