@@ -2,7 +2,7 @@ from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
-from app.common.namespaces import ChatNamespace
+from app.common.namespaces import ChatNamespace, SupportNamespace
 from app.common.hooks import jwt
 from app.database import database, init_models
 
@@ -12,10 +12,6 @@ from app.internal import admin
 import socketio
 
 def create_application():
-    
-    # Create all tables in the database.
-    # metadata.drop_all(bind=engine)
-    # metadata.create_all(bind=engine)
     
     _app = FastAPI(
         debug=True,
@@ -32,7 +28,7 @@ def create_application():
     
     return _app
 
-io = socketio.AsyncServer(logger=True, cors_allowed_origins=[str(origin) for origin in settings.BACKEND_CORS_ORIGINS], async_mode='asgi', ping_timeout=30000)
+io = socketio.AsyncServer(logger=True, cors_allowed_origins=[str(origin) for origin in settings.BACKEND_CORS_ORIGINS], async_mode='asgi', ping_timeout=30000, always_connect=True)
 app = create_application()
 io_app = socketio.ASGIApp(io, app)
 
@@ -54,3 +50,4 @@ app.include_router(
 
 # Register socketio namespaces
 io.register_namespace(ChatNamespace())
+io.register_namespace(SupportNamespace(namespace='/support'))

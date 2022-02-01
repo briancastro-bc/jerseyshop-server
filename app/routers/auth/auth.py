@@ -109,28 +109,26 @@ class AuthController:
     
     @router.get('/verifyAccount', status_code=200)
     async def verify_account(self, token: str, db: AsyncSession=Depends(get_session)):
-        decoded = JwtService.decode(encoded=token, validate=False)
-        db_user = await db.query(User).filter_by(uid=decoded['sub']).first()
-        if db_user:
-            if not db_user.is_verify:
-                db_user.is_verify = True
-                db.commit()
-                return HttpResponseOK({
-                    "status": "success",
-                    "data": {
-                        "message": "Tu cuenta ha sido verificada"
-                    }
-                }).response()
-            return HttpResponseBadRequest({
+        decoded = JwtService.decode(encoded=token, validate=True)
+        if type(decoded) is dict:
+            return HttpResponseUnauthorized({
                 "status": "fail",
                 "data": {
-                    "message": "Tu cuenta ya esta verificada"
+                    "message": decoded.get('message')
+                }
+            }).response()
+        db_user = await self.auth.verify_account(decoded, db)
+        if db_user:
+            return HttpResponseOK({
+                "status": "success",
+                "data": {
+                    "message": "Tu cuenta ha sido verificada"
                 }
             }).response()
         return HttpResponseBadRequest({
             "status": "fail",
             "data": {
-                "message": "La cuenta del usuario es inválida o no existe"
+                "message": "La cuenta ya ha sido verificada"
             }
         }).response()
     

@@ -1,7 +1,5 @@
-import uuid
-from sqlalchemy import Column, String, Date, DateTime, Boolean, TIMESTAMP, Table, ForeignKey, Integer
+from sqlalchemy import Column, String, DateTime, Boolean, TIMESTAMP, Table, ForeignKey, Integer
 from sqlalchemy.orm import relationship, backref
-from fastapi_utils.guid_type import GUID
 
 from app.database import Base, metadata
 
@@ -20,7 +18,7 @@ user_permissions = Table('user_permissions',
 )
 
 class User(Base):
-    __tablename__ = "users"
+    __tablename__ = 'users'
     uid = Column(String(36), primary_key=True, nullable=False, default=str(uuid.uuid4()))
     email = Column(String(70), unique=True, nullable=False)
     password = Column(String(450), nullable=True)
@@ -31,5 +29,6 @@ class User(Base):
     accept_advertising = Column(Boolean, default=False)
     accept_terms = Column(Boolean, default=False)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, default=datetime.datetime.utcnow())
+    #profile = relationship('Profile', back_populates='users', uselist=False)
     groups = relationship('Group', secondary=user_groups, lazy='subquery', backref=backref('users', lazy=True))
     permissions = relationship('Permission', secondary=user_permissions, lazy='subquery', backref=backref('users', lazy=True))

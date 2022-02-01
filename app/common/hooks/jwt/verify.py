@@ -1,4 +1,5 @@
 from fastapi import Depends, HTTPException, Header
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.schemas import User
@@ -22,8 +23,9 @@ async def verify(authorization: str = Header(None), validate_account: bool=True,
                 "message": decoded.get('message')
             }
         })
+    # FIXME: //Pass to other function or dependencie line 27 to 37
     if validate_account:
-        db_user = await db.query(User).filter_by(uid=decoded['sub']).first()
+        db_user: User = await db.get(User, decoded['sub'])
         if db_user.is_verify:
             return True
         raise HTTPException(401, {

@@ -28,7 +28,8 @@ class Base:
     @declared_attr
     def __tablename__(cls) -> str:
         return cls.__name__.lower()
-    
+
+# Create/Drop all models/migrations in DBM.
 async def init_models():
     async with engine.begin() as conn:
         #await conn.run_sync(Base.metadata.drop_all)
