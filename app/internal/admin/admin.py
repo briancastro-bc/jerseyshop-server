@@ -29,3 +29,7 @@ class AdminController:
     @router.get('/', response_model=None, status_code=200)
     async def panel(self):
         return "admin panel works"
+
+    @router.get('/supportRooms', response_model=None, status_code=200)
+    async def support_rooms(self):
+        return "All support rooms created at moment"
