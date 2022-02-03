@@ -5,13 +5,15 @@ from app.database import Base, metadata
 
 import datetime, uuid
 
-user_groups = Table('user_groups',
+user_groups = Table(
+    'user_groups',
     metadata,
     Column('user_id', String(36), ForeignKey('users.uid'), primary_key=True),
     Column('group_id', Integer, ForeignKey('groups.id'), primary_key=True)
 )
     
-user_permissions = Table('user_permissions',
+user_permissions = Table(
+    'user_permissions',
     metadata,
     Column('user_id', String(36), ForeignKey('users.uid'), primary_key=True),
     Column('permission_id', Integer, ForeignKey('permissions.id'), primary_key=True)

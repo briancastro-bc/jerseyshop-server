@@ -1,14 +1,14 @@
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 import socketio
 
 class SupportNamespace(socketio.AsyncNamespace):
     
     def __init__(self, namespace=None):
         super().__init__(namespace)
-        self.rooms: Dict[str, Any] = {}
+        self.rooms: List[str] = []
         self.rooms_limit: int = 5
     
-    async def on_connect(self, sid: str):
+    async def on_connect(self, sid: str, environ):
         print('User connected: {0}'.format(sid))
     
     async def on_create_room(self, sid: str, data: Dict[str, Any]):
@@ -18,7 +18,7 @@ class SupportNamespace(socketio.AsyncNamespace):
             })
             return
         # Add a new room in the rooms dictionary.
-        self.rooms.update(data['room'])
+        self.rooms.append(data['room']) #TODO: //Search a solution for creating a room.
         await self.on_join(sid=sid, data=data)
     
     async def on_join(self, sid: str, data: Dict[str, Any]):

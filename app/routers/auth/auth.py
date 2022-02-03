@@ -6,9 +6,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.http import HttpResponseBadRequest, HttpResponseCreated, HttpResponseOK, HttpResponseUnauthorized
 from app.core.schemas import User
-from app.common.services import AuthService, JwtService, EmailService
+from app.common.services import JwtService, EmailService
 from app.common.models import UserCreate, UserBase, UserRecovery
 from app.database import get_session
+
+from .service import AuthService
 
 import datetime
 

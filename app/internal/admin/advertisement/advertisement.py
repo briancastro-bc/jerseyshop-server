@@ -46,12 +46,12 @@ class AdvertisementController:
             }
         }).response()
     
-    @router.put('/update', response_model=None, status_code=201)
-    async def update(self):
+    @router.put('/update/{uid}', response_model=None, status_code=201)
+    async def update(self, uid: str):
         ...
     
-    @router.patch('/edit', response_model=None, status_code=204)
-    async def edit(self):
+    @router.patch('/edit/{uid}', response_model=None, status_code=204)
+    async def edit(self, uid: str):
         ...
     
     @router.delete('/delete/{uid}', response_model=None, status_code=204)

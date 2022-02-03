@@ -3,7 +3,7 @@ from fastapi import Depends
 from fastapi_utils.inferring_router import InferringRouter
 from fastapi_utils.cbv import cbv
 
-from . import dashboard, advertisement, inventory
+from . import dashboard, advertisement, inventory, room
 
 router = InferringRouter()
 
@@ -18,6 +18,10 @@ router.include_router(
 router.include_router(
     router=inventory.router,
     prefix='/inventory'
+)
+router.include_router(
+    router=room.router,
+    prefix='/rooms'
 )
 
 @cbv(router)
