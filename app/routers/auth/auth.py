@@ -1,4 +1,4 @@
-from fastapi import Depends 
+from fastapi import Depends, HTTPException
 
 from fastapi_utils.cbv import cbv
 from fastapi_utils.inferring_router import InferringRouter
@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.http import HttpResponseBadRequest, HttpResponseCreated, HttpResponseOK, HttpResponseUnauthorized
 from app.core.schemas import User
 from app.common.services import JwtService, EmailService
-from app.common.models import UserCreate, UserBase, UserRecovery
+from app.common.models import UserCreate, UserBase, UserRecovery, RefreshToken
 from app.database import get_session
 
 from .service import AuthService
@@ -184,3 +184,27 @@ class AuthController:
                 "message": "Hemos enviado un email de confirmación"
             }
         }).response()
+    
+    @router.post('/refreshToken', response_model=RefreshToken, status_code=201)
+    async def refresh_token(self, token: RefreshToken):
+        refresh_token = self.auth.refresh_token(access_token=token.access_token)
+        if refresh_token:
+            return HttpResponseCreated({
+                "status": "success",
+                "data": {
+                    "message": "El token ha sido refrescado",
+                    "access_token": refresh_token,
+                    "refresh_token": True
+                }
+            }).response()
+        raise HTTPException(
+            401,
+            {
+                "status": "fail",
+                "data": {
+                    "message": "Token is expired",
+                    "refresh_token": False
+                }
+            }
+        )
+        

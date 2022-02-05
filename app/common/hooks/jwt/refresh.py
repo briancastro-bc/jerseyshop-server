@@ -1,42 +1,63 @@
-from functools import wraps
+from fastapi import Header, Response, HTTPException
 
-from fastapi import Header, Response
-
-from app.core.http import HttpResponseUnauthorized
 from app.common.services import JwtService
 
 import time, datetime
 
-def refresh(Authorization: str=Header(None)):
-    def _refresh_token(f):
-        @wraps(f)
-        def wrapper(*args, **kwargs):
-            current_token: str = Authorization.split(' ')[1]
-            decoded = JwtService.decode(encoded=current_token, validate=True)
-            # Token expired
-            if type(decoded) is dict:
-                return HttpResponseUnauthorized({
-                    "status": "fail",
-                    "data": {
-                        decoded
-                    }
-                })
-            # Token is expire soon. It going to refresh
-            if decoded['exp'] >= time.time() + 600:
-                new_token: str = JwtService.encode(
-                    payload={
-                        "iss": "jerseyshop.com",
-                        "sub": decoded['sub'],
-                        "iat": datetime.datetime.utcnow(),
-                        "exp": datetime.datetime.utcnow() + datetime.timedelta(days=1)
-                    },
-                    encrypt=True
-                )
-                response = Response()
-                response.headers['Authorization'] = 'Bearer {0}'.format(new_token)
-                # Return the new token.
-                return new_token
-            # The token isn't expired
-            return f(*args, **kwargs)
-        return wrapper
-    return _refresh_token
+"""
+    :dependency refresh - Verifica si el token que se envia por cabecera esta a punto de expirar, de ser asi
+    genera un nuevo token JWT y lo envia en la cabecera. En caso de que no haya expirado continúa con la solicitud.
+"""
+def refresh(authorization: str=Header(None)):
+    current_token: str = authorization.split(' ')[1] if authorization is not None else None
+    if not current_token or current_token == 'null':
+        return
+    decoded = JwtService.decode(encoded=current_token, validate=True)
+    # Si es ejecutada esta exception quiere decir que el token expiró.
+    if type(decoded) is dict:
+        raise HTTPException(
+            # Capturar este 401 en el lado del frontend y verificar si la clave refresh_token esta en false
+            # de esta manera me doy cuenta si vención el token.
+            401,
+            {
+                "status": "fail",
+                "data": {
+                    "message": decoded.get('message'),
+                    "refresh_token": False
+                }
+            }
+        )
+    if decoded['exp'] >= time.time() + 600:
+        new_token: str = JwtService.encode(
+            payload={
+                "iss": "jerseyshop.com",
+                "sub": decoded['sub'],
+                "iat": datetime.datetime.utcnow(),
+                "exp": datetime.datetime.utcnow() + datetime.timedelta(days=1)
+            },
+            encrypt=True
+        )
+        raise HTTPException(
+            401,
+            {
+                "status": "success",
+                "data": {
+                    "message": "Access token was refresh",
+                    "access_token": new_token,
+                    "refresh_token": True
+                }
+            }
+        )
+        """response = Response(
+            {
+                "status": "success",
+                "data": {
+                    "message": "Access token was refreshed",
+                    "access_token": new_token,
+                    "refresh_token": True
+                }
+            },
+            status_code=200
+        )
+        return response"""
+    return

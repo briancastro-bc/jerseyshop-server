@@ -29,12 +29,6 @@ class Base:
     def __tablename__(cls) -> str:
         return cls.__name__.lower()
 
-# Create/Drop all models/migrations in DBM.
-async def init_models():
-    async with engine.begin() as conn:
-        #await conn.run_sync(Base.metadata.drop_all)
-        await conn.run_sync(Base.metadata.create_all)
-
 async def get_session() -> AsyncSession:
     async with async_session() as session:
         try:

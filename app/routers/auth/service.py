@@ -5,7 +5,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from passlib.context import CryptContext
 
 from app.common.models import UserCreate, UserBase
-from app.core.schemas import User 
+from app.common.services import JwtService
+from app.core.schemas import User, Group
+
+import time, datetime
 
 class AuthService:
     
@@ -28,6 +31,7 @@ class AuthService:
                     accept_terms=user.accept_terms
                 )
                 db.add(new_user)
+                #new_user.groups.append(new_group)
                 await db.commit()
                 return new_user
             except Exception as e:
@@ -76,6 +80,22 @@ class AuthService:
             return [db_user, new_password]
         return None
         
+    def refresh_token(self, access_token: str):
+        decoded = JwtService.decode(encoded=access_token, validate=True)
+        if type(decoded) is dict:
+            return None
+        if decoded['exp'] <= time.time() + 600:
+            new_token: str = JwtService.encode(
+                payload={
+                    "iss": "jerseyshop.com",
+                    "sub": decoded['sub'],
+                    "iat": datetime.datetime.utcnow(),
+                    "exp": datetime.datetime.utcnow() + datetime.timedelta(days=1)
+                },
+                encrypt=True
+            )
+            return new_token
+        return access_token
     
     def _get_password_hash(self, password: str):
         return self.__password_ctx.hash(password)

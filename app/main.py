@@ -1,18 +1,16 @@
-from typing import Any
-
-from fastapi import Depends, FastAPI, Request
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
+from app.core.init import init_models
 from app.common.namespaces import ChatNamespace, SupportNamespace
-from app.common.services import JwtService
-from app.common.hooks import jwt
-from app.database import database, init_models
+from app.common.hooks import jwt, required
+from app.database import database
 
 from app.routers import auth, home
 from app.internal import admin
 
-import socketio, time, datetime
+import socketio
 
 def create_application():
     
@@ -27,35 +25,8 @@ def create_application():
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
+        expose_headers=["X-Refresh-Token"]
     )
-    
-    """
-        :middleware refresh_token - Verifica si el token que se envia por cabecera esta a punto de expirar, de ser asi
-        genera un nuevo token JWT y lo envia en la cabecera.
-    """
-    @_app.middleware('http')
-    async def refresh_token(request: Request, call_next: Any):
-        response = await call_next(request)
-        authorization = request.headers.get('Authorization').split(' ')[1] if request.headers.get('Authorization') else "default"
-        current_token: str = authorization
-        decoded = JwtService.decode(encoded=current_token, validate=True)
-        # Token is expired
-        if type(decoded) is dict:
-            return response
-        # Token will expire soon. It going to refresh.
-        if decoded['exp'] >= time.time() + 600:
-            new_token: str = JwtService.encode(
-                payload={
-                    "iss": "jerseyshop.com",
-                    "sub": decoded['sub'],
-                    "iat": datetime.datetime.utcnow(),
-                    "exp": datetime.datetime.utcnow() + datetime.timedelta(days=1)
-                },
-                encrypt=True
-            )
-            response.headers['Authorization'] = "Bearer {}".format(new_token)
-            return response
-        return response
     
     return _app
 
@@ -77,7 +48,10 @@ app.include_router(router=auth.router, prefix='/auth')
 app.include_router(
     router=admin.router,
     prefix='/admin',
-    dependencies=[Depends(jwt.verify)]
+    dependencies=[
+        Depends(jwt.verify),
+        Depends(required.group(['users']))
+    ]
 )
 
 # Register socketio namespaces

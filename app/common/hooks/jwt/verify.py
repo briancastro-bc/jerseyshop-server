@@ -1,5 +1,4 @@
 from fastapi import Depends, HTTPException, Header
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.schemas import User
@@ -8,7 +7,7 @@ from app.database import get_session
 
 async def verify(authorization: str = Header(None), validate_account: bool=True, db: AsyncSession=Depends(get_session)):
     token: str = authorization.split(' ')[1] if authorization is not None else None
-    if not token:
+    if not token or token == 'null':
         raise HTTPException(401, {
             "status": "fail",
             "data": {

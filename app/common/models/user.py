@@ -58,3 +58,7 @@ class UserRecovery(BaseModel):
     
     class Config:
         orm_mode = True
+
+class RefreshToken(APIModel):
+    access_token: str
+    refresh_token: Optional[bool]
