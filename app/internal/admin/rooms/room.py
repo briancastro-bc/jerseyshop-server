@@ -4,12 +4,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi_utils.inferring_router import InferringRouter
 from fastapi_utils.cbv import cbv
 
-from app.core.http import HttpResponseBadRequest, HttpResponseCreated
+from app.core.http import HttpResponseBadRequest, HttpResponseCreated, HttpResponseNotFound, HttpResponseOK
 from app.core.schemas import Room
 from app.database import get_session
 
 from .service import RoomService
-from .model import RoomCreate
+from .model import RoomCreate, RoomModel
 
 router = InferringRouter()
 
@@ -19,13 +19,39 @@ class RoomsController:
     def __init__(self) -> None:
         self.room = RoomService()
     
-    @router.get('/', response_model=None, status_code=200)
-    async def get_all(self,):
-        pass
+    @router.get('/', response_model=RoomModel, status_code=200)
+    async def get_all(self, db: AsyncSession=Depends(get_session)):
+        rooms: Room = await self.room.get_all(db)
+        if rooms:
+            return HttpResponseOK({
+                "status": "success",
+                "data": {
+                    "rooms": rooms
+                }
+            }).response()
+        return HttpResponseNotFound({
+            "status": "fail",
+            "data": {
+                "message": "No se encontraron salas de soporte"
+            }
+        }).response()
     
-    @router.get('/{code}', response_model=None, status_code=200)
-    async def get_one(self, code: str):
-        pass
+    @router.get('/{code}', response_model=RoomModel, status_code=200)
+    async def get_one(self, code: str, db: AsyncSession=Depends(get_session)):
+        db_room: Room = self.room.get_one(code, db)
+        if db_room:
+            return HttpResponseOK({
+                "status": "success",
+                "data": {
+                    "room": db_room
+                }
+            }).response()
+        return HttpResponseNotFound({
+            "status": "fail",
+            "data": {
+                "message": "No se encontró la sala"
+            }
+        }).response()
     
     @router.post('/create', response_model=RoomCreate, status_code=201)
     async def create(self, room: RoomCreate, db: AsyncSession=Depends(get_session)):
@@ -45,14 +71,14 @@ class RoomsController:
             }
         }).response()
     
-    @router.put('/update/{code}', response_model=None, status_code=201)
-    async def update(self, code: str):
+    @router.put('/update/{code}', response_model=RoomModel, status_code=201)
+    async def update(self, code: str, room: RoomModel, db: AsyncSession=Depends(get_session)):
         pass
 
     @router.patch('/edit/{code}', response_model=None, status_code=204)
-    async def edit(self, code: str):
+    async def edit(self, code: str, db: AsyncSession=Depends(get_session)):
         pass
     
     @router.delete('/delete/{code}', response_model=None, status_code=204)
-    async def delete(self, code: str):
+    async def delete(self, code: str, db: AsyncSession=Depends(get_session)):
         pass

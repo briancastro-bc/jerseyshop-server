@@ -57,8 +57,8 @@ class AuthController:
     
     @router.post('/signup', response_model=UserCreate, status_code=201)
     async def signup(self, user: UserCreate, db: AsyncSession=Depends(get_session)):
-        user: User = await self.auth.register(user, db)
-        if user is None:
+        db_user: User = await self.auth.register(user, db)
+        if db_user is None:
             return HttpResponseBadRequest({
                 "status": "fail",
                 "data": {
@@ -68,7 +68,7 @@ class AuthController:
         access_token: str = JwtService.encode(
             payload={
                 "iss": "jerseyshop.com",
-                "sub": user.uid,
+                "sub": db_user.uid,
                 "iat": datetime.datetime.utcnow(),
                 "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=15)
             },
@@ -79,14 +79,15 @@ class AuthController:
             "status": "success",
             "data": {
                 "message": "Gracias por hacer parte de Jersey Shop. Te damos la bienvenida!",
-                "access_token": access_token
+                "access_token": access_token,
+                "user": db_user
             }
         }).response()
         
     @router.post('/login', response_model=UserBase, status_code=200)
     async def login(self, user: UserBase, db: AsyncSession=Depends(get_session)):
-        user: User = await self.auth.login(user, db)
-        if user is None:
+        db_user: User = await self.auth.login(user, db)
+        if db_user is None:
             return HttpResponseUnauthorized({
                 "status": "fail",
                 "data": {
@@ -96,7 +97,7 @@ class AuthController:
         access_token: str = JwtService.encode(
             payload={
                 "iss": "jerseyshop.com",
-                "sub": user.uid,
+                "sub": db_user.uid,
                 "iat": datetime.datetime.utcnow(),
                 "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=15)
             },
@@ -105,7 +106,8 @@ class AuthController:
         return HttpResponseOK({
             "status": "success",
             "data": {
-                "access_token": access_token
+                "access_token": access_token,
+                "user": db_user
             }
         }).response()
     

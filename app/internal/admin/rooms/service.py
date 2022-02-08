@@ -1,16 +1,37 @@
 from fastapi import HTTPException
 
-from sqlalchemy import select
+from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.schemas import Room
 
-from .model import RoomCreate
+from .model import RoomCreate, RoomModel
 
 class RoomService:
     
     def __init__(self) -> None:
         pass
+    
+    """
+        :method get_all - Toma todas las salas de soporte que hayan en la base de datos.
+    """
+    async def get_all(self, db: AsyncSession):
+        query = await db.execute(select(Room).where(Room.is_active == True).order_by(Room.name))
+        db_rooms = query.scalars().all()
+        if not db_rooms:
+            return None
+        return db_rooms
+    
+    """
+        :method get_one - Me devuelve una sala de soporte especificada por código.
+        :params code - Especifica el codigo de la sala.
+    """
+    async def get_one(self, code: str, db: AsyncSession):
+        query = await db.execute(select(Room).where(Room.code == code))
+        db_rooms = query.scalars().first()
+        if not db_rooms:
+            return None
+        return db_rooms
     
     """
         :method create - Permite crear una nueva sala de soporte en la base de datos.
@@ -42,6 +63,55 @@ class RoomService:
                 )
             return new_room
         return None
+
+    """
+        :method update - Actualiza los datos de una sala de soporte.
+        :param room - Especifica que informacion se quiere actualizar.
+    """
+    async def update(self, code: str, room: RoomModel, db: AsyncSession):
+        try:
+            await db.execute(update(Room).where(Room.code == code).values(
+                name=room.name,
+                limit=room.limit,
+                is_active=room.is_active
+            ))
+            await db.commit()
+        except:
+            return False
+        return True
+
+    """
+        :method edit - Edita uno o varios elementos referentes a Room en la base de datos
+        :param code - Representa el codigo de la sala.
+        :param room_code - En caso de querer editar la sala se pasa el room_code
+        :param name - Permite editar el nombre de la sala
+        :param limit - Permite editar el limite de la sala.
+        :param is_active - Edita el estado de la sala.
+    """
+    async def edit(self, code: str, db: AsyncSession, **kwargs):
+        try:
+            await db.execute(update(Room).where(Room.code == code).values(
+                code=kwargs.get('room_code'),
+                name=kwargs.get('name'),
+                limit=kwargs.get('limit'),
+                is_active=kwargs.get('is_active'),
+            ))
+            await db.commit()
+        except:
+            return False
+        return True
+    
+    """
+        :method delete - Borra una sala de soporte de la base de datos
+        :param code - El codigo de la sala que se quiere borrar
+    """
+    async def delete(self, code: str, db: AsyncSession):
+        try:
+            await db.execute(delete(Room).where(Room.code == code))
+            await db.commit()
+        except:
+            return False
+        return True
     
     """
         :func _generate_room_code - Genera un código aleatorio de 8 digitos y los separa a la mitad con un guión.

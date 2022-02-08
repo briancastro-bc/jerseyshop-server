@@ -50,7 +50,7 @@ app.include_router(
     prefix='/admin',
     dependencies=[
         Depends(jwt.verify),
-        Depends(required.group(['users']))
+        #Depends(required.group(['users']))
     ]
 )
 

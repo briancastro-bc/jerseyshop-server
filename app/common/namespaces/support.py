@@ -1,12 +1,19 @@
 from typing import Dict, Any, Optional, List
+
+from fastapi import Depends
+
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.database import get_session
+
 import socketio
 
 class SupportNamespace(socketio.AsyncNamespace):
     
-    def __init__(self, namespace=None):
+    def __init__(self, namespace=None, db: AsyncSession=Depends(get_session)):
         super().__init__(namespace)
         self.rooms: List[str] = []
-        self.rooms_limit: int = 5
+        self.rooms_limit: int = 2
     
     async def on_connect(self, sid: str, environ):
         print('User connected: {0}'.format(sid))
@@ -14,11 +21,11 @@ class SupportNamespace(socketio.AsyncNamespace):
     async def on_create_room(self, sid: str, data: Dict[str, Any]):
         if len(self.rooms) > self.rooms_limit:
             await self.emit('room_limit', {
-                "message": "El limite de salas de soporte fue superado."
+                "message": "El limite de la sala de soporte fue superado."
             })
             return
-        # Add a new room in the rooms dictionary.
-        self.rooms.append(data['room']) #TODO: //Search a solution for creating a room.
+        # Add a new room in the rooms list.
+        self.rooms.append(data['room']) 
         await self.on_join(sid=sid, data=data)
     
     async def on_join(self, sid: str, data: Dict[str, Any]):
