@@ -4,11 +4,11 @@ from fastapi_utils.cbv import cbv
 from fastapi_utils.inferring_router import InferringRouter
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.database import get_session
 from app.core.http import HttpResponseBadRequest, HttpResponseCreated, HttpResponseOK, HttpResponseUnauthorized
 from app.core.schemas import User
 from app.common.services import JwtService, EmailService
 from app.common.models import UserCreate, UserBase, UserRecovery, RefreshToken
-from app.database import get_session
 
 from .service import AuthService
 
@@ -56,7 +56,7 @@ class AuthController:
         """
     
     @router.post('/signup', response_model=UserCreate, status_code=201)
-    async def signup(self, user: UserCreate, db: AsyncSession=Depends(get_session), background_tasks: BackgroundTasks=BackgroundTasks()):
+    async def signup(self, user: UserCreate, background_tasks: BackgroundTasks, db: AsyncSession=Depends(get_session)):
         db_user: User = await self.auth.register(user, db)
         if db_user is None:
             return HttpResponseBadRequest({
@@ -81,7 +81,6 @@ class AuthController:
             message=self.message_format.format(user.name, access_token), 
             format='html'
         )
-        #await self.email.send_email([user.email], "Bienvenido: verifica tu cuenta", message=self.message_format.format(user.name, access_token), format='html')
         return HttpResponseCreated({
             "status": "success",
             "data": {
@@ -144,7 +143,7 @@ class AuthController:
         }).response()
     
     @router.post('/passwordRecovery', status_code=201)
-    async def password_recovery(self, user: UserRecovery, db: AsyncSession=Depends(get_session), background_tasks: BackgroundTasks=BackgroundTasks()):
+    async def password_recovery(self, user: UserRecovery, background_tasks: BackgroundTasks, db: AsyncSession=Depends(get_session)):
         user: list = await self.auth.password_recovery(email=user.email, db=db)
         if user is None:
             return HttpResponseBadRequest({
@@ -193,7 +192,6 @@ class AuthController:
             message=message_format,
             format='html'
         )
-        #await self.email.send_email([user[0].email], "Recuperación: restablecimiento de contraseña", message=message_format, format='html')
         return HttpResponseCreated({
             "status": "success",
             "data": {
