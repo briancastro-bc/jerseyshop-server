@@ -1,4 +1,3 @@
-from click import password_option
 from sqlalchemy import Column, String, DateTime, Boolean, TIMESTAMP, Table, ForeignKey, Integer
 from sqlalchemy.orm import relationship, backref
 
@@ -32,11 +31,21 @@ class User(Base):
     accept_advertising = Column(Boolean, default=False)
     accept_terms = Column(Boolean, default=False)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, default=datetime.datetime.utcnow())
-    #profile = relationship('Profile', back_populates='users', uselist=False)
-    groups = relationship('Group', secondary=user_groups, lazy='subquery', backref=backref('users', lazy=True))
-    permissions = relationship('Permission', secondary=user_permissions, lazy='subquery', backref=backref('users', lazy=True))
+    profile = relationship('Profile', back_populates='user', uselist=False)
+    groups = relationship('Group', secondary=user_groups, backref=backref('users', lazy=True))
+    permissions = relationship('Permission', secondary=user_permissions, backref=backref('users', lazy=True))
+    room = relationship('Room')
 
-    def __init__(self, email, name, last_name, birthday, accept_advertising, accept_terms, password=None) -> None:
+    def __init__(
+        self, 
+        email: str=None, 
+        name: str=None, 
+        last_name: str=None, 
+        birthday: str=None, 
+        accept_advertising: bool=None, 
+        accept_terms: bool=None, 
+        password: str=None
+    ) -> None:
         super().__init__()
         self.uid = self.generate_uid()
         self.email = email

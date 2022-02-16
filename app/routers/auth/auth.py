@@ -86,7 +86,7 @@ class AuthController:
             "data": {
                 "message": "Gracias por hacer parte de Jersey Shop. Te damos la bienvenida!",
                 "access_token": access_token,
-                "user": db_user
+                #"user": db_user
             }
         }).response()
         

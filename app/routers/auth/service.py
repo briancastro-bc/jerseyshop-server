@@ -6,7 +6,7 @@ from passlib.context import CryptContext
 
 from app.common.models import UserCreate, UserBase
 from app.common.services import JwtService
-from app.core.schemas import User, Group
+from app.core.schemas import User, Group, Profile
 
 import time, datetime
 
@@ -15,6 +15,10 @@ class AuthService:
     def __init__(self) -> None:
         self.__password_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
     
+    """
+        :method register - Crea un nuevo usuario en la base de datos pasandole un perfil
+        asociado a ese nuevo usuario.
+    """
     async def register(self, user: UserCreate, db: AsyncSession):
         query = await db.execute(select(User).where(User.email == user.email))
         db_user = query.scalars().first()
@@ -30,8 +34,17 @@ class AuthService:
                     accept_advertising=user.accept_advertising, 
                     accept_terms=user.accept_terms
                 )
+                new_user_profile = Profile(
+                    user_uid=new_user.uid,
+                    phone_number="1234567890",
+                    photo="https://www.pngarts.com/files/3/Avatar-PNG-Pic.png"
+                )
+                new_user.profile = new_user_profile
+                query_group = await db.execute(select(Group).where(Group.code_name == 'users'))
+                db_group = query_group.scalars().first()
                 db.add(new_user)
-                #new_user.groups.append(new_group)
+                #TODO: Resolve groups and permissions validation.
+                new_user.groups.append(db_group)
                 await db.commit()
                 return new_user
             except Exception as e:

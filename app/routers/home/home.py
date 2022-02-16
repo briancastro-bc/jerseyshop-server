@@ -1,4 +1,3 @@
-
 from fastapi import Depends
 
 from fastapi_utils.inferring_router import InferringRouter
@@ -28,10 +27,10 @@ class HomeController:
                 "data": {
                     "rooms": rooms
                 }
-            })
+            }).response()
         return HttpResponseBadRequest({
             "status": "fail",
             "data": {
                 "message": "No se encontraron salas de soporte"
             }
-        })
+        }).response()

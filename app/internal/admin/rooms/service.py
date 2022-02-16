@@ -17,7 +17,7 @@ class RoomService:
     """
     async def get_all(self, db: AsyncSession):
         query = await db.execute(select(Room).where(Room.is_active == True).order_by(Room.name))
-        db_rooms = query.scalars().all()
+        db_rooms = query.scalars().fetchall()
         if not db_rooms:
             return None
         return db_rooms

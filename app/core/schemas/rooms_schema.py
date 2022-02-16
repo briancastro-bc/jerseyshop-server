@@ -19,4 +19,5 @@ class Room(Base):
     limit = Column(Integer, nullable=False, default=2)
     is_active = Column(Boolean, nullable=False, default=True)
     created_at = Column(TIMESTAMP(timezone=True), default=datetime.datetime.utcnow())
-    users = relationship('User', secondary=rooms_users_table, lazy='subquery', backref=backref('rooms', lazy=True))  
+    owner = Column(String(36), ForeignKey('users.uid'), primary_key=True)
+    users = relationship('User', secondary=rooms_users_table, lazy='subquery', backref=backref('rooms', lazy=True))

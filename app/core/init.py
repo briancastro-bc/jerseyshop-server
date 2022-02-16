@@ -1,4 +1,3 @@
-from unicodedata import name
 from ..database import engine, Base, async_session
 from .schemas import Group, Permission
 
@@ -16,5 +15,9 @@ async def init_models():
                             name='Administradores',
                             code_name='admins',
                         ),
+                        Group(
+                            name='Usuarios',
+                            code_name='users'
+                        )
                     ]
                 )"""
