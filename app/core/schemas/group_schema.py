@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Table, ForeignKey
 from sqlalchemy.orm import relationship, backref
 
-from app.database import Base, metadata
+from app.core.database import Base, metadata
 
 groups_permissions = Table(
     'groups_permissions',

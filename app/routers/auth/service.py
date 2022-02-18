@@ -4,9 +4,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from passlib.context import CryptContext
 
+from app.core import User, Group, Profile
 from app.common.models import UserCreate, UserBase
 from app.common.services import JwtService
-from app.core.schemas import User, Group, Profile
 
 import time, datetime
 
@@ -75,7 +75,7 @@ class AuthService:
                 await db.commit()
                 return db_user
             return None
-        return HTTPException(401, {
+        raise HTTPException(401, {
             "status": "fail",
             "data": {
                 "message": "La cuenta del usuario es inválida o no existe"

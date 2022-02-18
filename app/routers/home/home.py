@@ -6,9 +6,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.http import HttpResponseOK, HttpResponseBadRequest
 from app.core.schemas import Room
-from app.database import get_session
+from app.core.dependency import get_session
 
-from app.internal.admin.rooms.service import RoomService
+from app.routers.admin.rooms.service import RoomService
 
 router = InferringRouter()
 

@@ -1,9 +1,10 @@
-from fastapi import HTTPException
+from fastapi import HTTPException, Depends
 
 from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.schemas import Room
+from app.core import Room, User
+from app.core.dependency import get_current_user
 
 from .model import RoomCreate, RoomModel
 
@@ -37,7 +38,7 @@ class RoomService:
         :method create - Permite crear una nueva sala de soporte en la base de datos.
         :param room - Especifica que modelo de datos tendrá una sala en especifico.
     """
-    async def create(self, room: RoomCreate, db: AsyncSession):
+    async def create(self, room: RoomCreate, db: AsyncSession, current_user: User):
         query = await db.execute(select(Room).where(Room.name == room.name))
         db_room = query.scalars().first()
         if not db_room:
@@ -46,7 +47,8 @@ class RoomService:
                 new_room = Room(
                     code=room_code,
                     name=room.name,
-                    limit=room.limit if room.limit is not None else 2
+                    limit=room.limit if room.limit is not None else 2,
+                    owner=current_user.uid
                 )
                 db.add(new_room)
                 await db.commit()

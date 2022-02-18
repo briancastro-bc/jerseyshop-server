@@ -1,7 +1,7 @@
 from sqlalchemy import TIMESTAMP, Column, Boolean, CHAR, ForeignKey, Integer, Table, String
 from sqlalchemy.orm import relationship, backref
 
-from app.database import Base, metadata
+from app.core.database import Base, metadata
 
 import datetime
 
@@ -21,3 +21,16 @@ class Room(Base):
     created_at = Column(TIMESTAMP(timezone=True), default=datetime.datetime.utcnow())
     owner = Column(String(36), ForeignKey('users.uid'), primary_key=True)
     users = relationship('User', secondary=rooms_users_table, lazy='subquery', backref=backref('rooms', lazy=True))
+    
+    def __init__(
+        self, 
+        code: str, 
+        name: str, 
+        limit: int,
+        owner: str
+    ) -> None:
+        super().__init__()
+        self.code = code
+        self.name = name
+        self.limit = limit
+        self.owner = owner

@@ -8,7 +8,7 @@ from fastapi_utils.cbv import cbv
 
 from app.core.http import HttpResponseBadRequest, HttpResponseCreated
 from app.core.schemas import Advertisement
-from app.database import get_session
+from app.core.dependency import get_session
 
 from .model import AdvertisementCreate, AdvertisementModel
 from .service import AdvertisementService

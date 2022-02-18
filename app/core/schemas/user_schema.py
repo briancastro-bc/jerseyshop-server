@@ -1,7 +1,7 @@
 from sqlalchemy import Column, String, DateTime, Boolean, TIMESTAMP, Table, ForeignKey, Integer
 from sqlalchemy.orm import relationship, backref
 
-from app.database import Base, metadata
+from app.core.database import Base, metadata
 
 import datetime, uuid
 
@@ -32,7 +32,7 @@ class User(Base):
     accept_terms = Column(Boolean, default=False)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, default=datetime.datetime.utcnow())
     profile = relationship('Profile', back_populates='user', uselist=False)
-    groups = relationship('Group', secondary=user_groups, backref=backref('users', lazy=True))
+    groups = relationship('Group', secondary=user_groups, lazy='joined', backref=backref('users', lazy=True))
     permissions = relationship('Permission', secondary=user_permissions, backref=backref('users', lazy=True))
     room = relationship('Room')
 

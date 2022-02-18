@@ -4,8 +4,8 @@ from fastapi import Depends
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.schemas import Room
-from app.database import get_session
+from app.core import Room
+from app.core.dependency import get_session
 
 import socketio
 
@@ -44,19 +44,11 @@ class SupportNamespace(socketio.AsyncNamespace):
         :emit message - Cuando detecta que alguien se unio, envia un mensaje a la sala especifica.
     """
     async def on_join(self, sid: str, data: Dict[str, Any], db: AsyncSession=Depends(get_session)):
-        #db_room: Room = await db.get(Room, data['room'])
         if not data['room'] in self.rooms:
             await self.emit('room_not_found', {
                 "message": "La sala de soporte a la que intenta acceder no existe."
             })
             return
-        """if db_room.limit > 2:
-            await self.emit('room_limit', {
-                "message": "El limite de la sala ha sido excedido."
-            })
-            return
-        db_room.limit += 1
-        await self.db.commit()"""
         self.enter_room(sid=sid, room=data['room'])
         await self.emit('user_joined', room=data['room'])
         await self.send({
@@ -77,13 +69,27 @@ class SupportNamespace(socketio.AsyncNamespace):
         :event leave - Se emite cuando un usuario abandona la sala en la que se encuentra.
     """
     async def on_leave(self, sid: str, data: Dict[str, Any]):
-        ...
+        self.leave_room(sid=sid, room=data['room'])
+        await self.emit('user_left', room=data['room'])
+        await self.send({
+            "message": "El usuario # {0} ha salido de la sala".format(sid),
+            "system_message": True
+        }, room=data['room'])
     
     """
         :event remove_room - Se emite cuando un dueño de sala inactiva la misma.
     """
     async def on_remove_room(self, sid: str, data: Dict[str, Any]):
-        ...
+        if not data['room'] in self.rooms:
+            await self.emit('room_not_found', {
+                "message": "La sala no esta activa actualmente"
+            })
+            return
+        self.leave_room(sid=sid, room=data['room'])
+        self.rooms.remove(data['room'])
+        await self.emit('room_removed', {
+            "message": "La sala ha sido inactivada"
+        })
         
     """
         :event disconnect - Se emite cuando un socket se desconecta.

@@ -1,6 +1,6 @@
 from sqlalchemy import Column, String, CHAR, TIMESTAMP, Boolean
 
-from app.database import Base
+from app.core.database import Base
 
 import uuid, datetime
 

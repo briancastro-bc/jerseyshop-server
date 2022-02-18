@@ -4,9 +4,9 @@ from fastapi_utils.cbv import cbv
 from fastapi_utils.inferring_router import InferringRouter
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import get_session
+from app.core import User
+from app.core.dependency import get_session
 from app.core.http import HttpResponseBadRequest, HttpResponseCreated, HttpResponseOK, HttpResponseUnauthorized
-from app.core.schemas import User
 from app.common.services import JwtService, EmailService
 from app.common.models import UserCreate, UserBase, UserRecovery, RefreshToken
 
@@ -119,7 +119,7 @@ class AuthController:
     
     @router.get('/verifyAccount', status_code=200)
     async def verify_account(self, token: str, db: AsyncSession=Depends(get_session)):
-        decoded = JwtService.decode(encoded=token, validate=True)
+        decoded = JwtService.decode(encoded=token, validate=False)
         if type(decoded) is dict:
             return HttpResponseUnauthorized({
                 "status": "fail",
@@ -128,17 +128,17 @@ class AuthController:
                 }
             }).response()
         db_user = await self.auth.verify_account(decoded, db)
-        if db_user:
-            return HttpResponseOK({
-                "status": "success",
+        if not db_user:
+            return HttpResponseBadRequest({
+                "status": "fail",
                 "data": {
-                    "message": "Tu cuenta ha sido verificada"
+                    "message": "La cuenta ya ha sido verificada"
                 }
             }).response()
-        return HttpResponseBadRequest({
-            "status": "fail",
+        return HttpResponseOK({
+            "status": "success",
             "data": {
-                "message": "La cuenta ya ha sido verificada"
+                "message": "Tu cuenta ha sido verificada"
             }
         }).response()
     

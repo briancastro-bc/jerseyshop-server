@@ -1,4 +1,4 @@
-from ..database import engine, Base, async_session
+from .database import engine, Base, async_session
 from .schemas import Group, Permission
 
 # Create/Drop all models/migrations in DBM.

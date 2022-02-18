@@ -4,9 +4,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi_utils.inferring_router import InferringRouter
 from fastapi_utils.cbv import cbv
 
+from app.core import Room, User
 from app.core.http import HttpResponseBadRequest, HttpResponseCreated, HttpResponseNotFound, HttpResponseOK
-from app.core.schemas import Room
-from app.database import get_session
+from app.core.dependency import get_current_user, get_session
 
 from .service import RoomService
 from .model import RoomCreate, RoomModel
@@ -54,8 +54,8 @@ class RoomsController:
         }).response()
     
     @router.post('/create', response_model=RoomCreate, status_code=201)
-    async def create(self, room: RoomCreate, db: AsyncSession=Depends(get_session)):
-        room: Room = await self.room.create(room, db)
+    async def create(self, room: RoomCreate, db: AsyncSession=Depends(get_session), current_user: User=Depends(get_current_user)):
+        room: Room = await self.room.create(room, db, current_user)
         if room:
             return HttpResponseCreated({
                 "status": "success",
