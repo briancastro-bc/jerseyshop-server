@@ -6,7 +6,6 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 from app.core.config import settings
-import asyncio
 
 """
     :class EmailService - defines properties and methods that can be used for

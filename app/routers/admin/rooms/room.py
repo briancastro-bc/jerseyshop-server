@@ -7,9 +7,9 @@ from fastapi_utils.cbv import cbv
 from app.core import Room, User
 from app.core.http import HttpResponseBadRequest, HttpResponseCreated, HttpResponseNotFound, HttpResponseOK
 from app.core.dependency import get_current_user, get_session
+from app.common.models import RoomCreate, RoomModel
 
-from .service import RoomService
-from .model import RoomCreate, RoomModel
+from .room_service import RoomService
 
 router = InferringRouter()
 

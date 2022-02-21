@@ -2,7 +2,7 @@ from typing import List
 
 from fastapi_utils.api_model import APIModel
 
-from .permission import Permission
+from .permission_model import Permission
 
 class GroupBase(APIModel):
     name: str

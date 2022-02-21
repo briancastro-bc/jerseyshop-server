@@ -2,7 +2,7 @@ from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core import settings
-from app.routers import home, auth, admin
+from app.routers import home, auth, admin, account
 from app.common.hooks import jwt, required
 
 """
@@ -32,8 +32,35 @@ def create_application() -> FastAPI:
         expose_headers=["X-Refresh-Token"]
     )
     
-    _app.include_router(router=home.router)
-    _app.include_router(router=auth.router, prefix='/auth')
+    """
+        :public: Routers
+    """
+    _app.include_router(
+        router=home.router,
+        tags=['Public']
+    )
+    _app.include_router(
+        router=auth.router, 
+        prefix='/auth',
+        tags=['Authentication']
+    )
+    
+    """
+        :private: Routers
+    """
+    _app.include_router(
+        router=account.router,
+        prefix='/account',
+        dependencies=[
+            Depends(jwt.verify(validate_account=False)),
+            Depends(required.group(['users']))
+        ],
+        tags=['Account']
+    )
+    
+    """
+        :protected: Routers
+    """
     _app.include_router(
         router=admin.router,
         prefix='/admin',

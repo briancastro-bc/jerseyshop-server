@@ -1,12 +1,11 @@
 from typing import Optional, List
+
 from pydantic import BaseModel, validator
-
 from fastapi import HTTPException
-
 from fastapi_utils.api_model import APIModel
 
-from .permission import Permission
-from .group import Group
+from .permission_model import Permission
+from .group_model import Group
 
 import datetime
 

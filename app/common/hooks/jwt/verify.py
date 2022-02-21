@@ -6,11 +6,11 @@ from app.core.dependency import get_payload_from_token, get_session
 
 def verify(validate_account: bool=False):
     async def _verify(decoded=Depends(get_payload_from_token), db: AsyncSession=Depends(get_session)):
-        if type(decoded) is dict:
+        if type(decoded) is dict or not decoded:
             raise HTTPException(401, {
                 "status": "fail",
                 "data": {
-                    "message": decoded.get('message')
+                    "message": decoded.get('message') if decoded is not None else 'Token missing'
                 }
             })
         if validate_account:

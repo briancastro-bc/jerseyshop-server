@@ -1,15 +1,19 @@
 from fastapi import HTTPException
-
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.schemas.advertisement_schema import Advertisement
-
-from .model import AdvertisementCreate
+from app.core import Advertisement
+from app.common.models import AdvertisementCreate
 
 class AdvertisementService:
     
     def __init__(self) -> None:
         pass
+    
+    async def get_all(self, db: AsyncSession):
+        try:
+            pass
+        except:
+            pass
     
     async def create(self, advertisement: AdvertisementCreate, db: AsyncSession):
         try:

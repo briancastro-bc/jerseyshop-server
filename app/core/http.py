@@ -38,7 +38,7 @@ class HttpResponseSucess(HttpResponse):
     
     isHttpResponseSuccess = True
     
-    def __init__(self, body: Dict[str, any]) -> None:
+    def __init__(self, body: Dict[str, any]=None) -> None:
         super().__init__(body)
 
 def isHttpResponseSuccess(obj: any) -> HttpResponseSucess:
@@ -112,6 +112,9 @@ class HttpResponseNotContent(HttpResponseSucess):
     
     def __init__(self) -> None:
         super().__init__()
+    
+    def __call__(self) -> Any:
+        return 
 
 def isHttpResponseNotContent(obj: any) -> HttpResponseNotContent:
     return obj is isinstance(HttpResponseNotContent or type(obj) and obj != None and obj.isHttpResponseNotContent == True)

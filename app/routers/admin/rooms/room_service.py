@@ -5,8 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import Room, User
 from app.core.dependency import get_current_user
-
-from .model import RoomCreate, RoomModel
+from app.common.models import RoomCreate, RoomModel
 
 class RoomService:
     

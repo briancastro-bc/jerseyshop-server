@@ -34,7 +34,6 @@ class SupportNamespace(socketio.AsyncNamespace):
                 "message": "La sala que intenta crear ya se encuentra activa"
             })
             return
-        # Add a new room in the rooms list.
         self.rooms.append(data['room']) 
         await self.on_join(sid=sid, data=data)
     
@@ -62,7 +61,6 @@ class SupportNamespace(socketio.AsyncNamespace):
     async def on_message(self, sid: str, data: Dict[str, Any]):
         await self.send({
             "message": data['message'],
-            #"user": sid
         }, room=data['room'])
     
     """
@@ -86,6 +84,7 @@ class SupportNamespace(socketio.AsyncNamespace):
             })
             return
         self.leave_room(sid=sid, room=data['room'])
+        await self.close_room(room=data['room'])
         self.rooms.remove(data['room'])
         await self.emit('room_removed', {
             "message": "La sala ha sido inactivada"

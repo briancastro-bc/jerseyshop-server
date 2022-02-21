@@ -23,13 +23,13 @@ def get_payload_from_token(authorization: str=Header(None)):
     return decoded
 
 async def get_current_user(decoded: Any=Depends(get_payload_from_token), db: AsyncSession=Depends(get_session)) -> User:
-    if type(decoded) is dict:
+    if type(decoded) is dict or not decoded:
         raise HTTPException(
             401,
             {
                 "status": "fail",
                 "data": {
-                    "message": decoded.get('message')
+                    "message": decoded.get('message') if decoded is not None else 'Token is missing'
                 }
             }
         )

@@ -10,11 +10,11 @@ from app.core.http import HttpResponseBadRequest, HttpResponseCreated, HttpRespo
 from app.common.services import JwtService, EmailService
 from app.common.models import UserCreate, UserBase, UserRecovery, RefreshToken
 
-from .service import AuthService
+from .auth_service import AuthService
 
 import datetime
 
-router: InferringRouter = InferringRouter()
+router = InferringRouter()
 
 @cbv(router)
 class AuthController:
@@ -22,7 +22,27 @@ class AuthController:
     def __init__(self) -> None:
         self.auth = AuthService()
         self.email = EmailService()
-        self.message_format = """
+    
+    @router.post('/signup', response_model=UserCreate, status_code=201)
+    async def signup(self, user: UserCreate, background_tasks: BackgroundTasks, db: AsyncSession=Depends(get_session)):
+        db_user: User = await self.auth.register(user, db)
+        if db_user is None:
+            return HttpResponseBadRequest({
+                "status": "fail",
+                "data": {
+                    "message": "El correo electronico ya se encuentra registrado"
+                }
+            }).response()
+        access_token: str = JwtService.encode(
+            payload={
+                "iss": "jerseyshop.com",
+                "sub": db_user.uid,
+                "iat": datetime.datetime.utcnow(),
+                "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=15)
+            },
+            encrypt=True
+        )
+        message_format = """
             <center>
                 <div style="padding: 0%;
                 margin: 0%;
@@ -54,31 +74,11 @@ class AuthController:
             </div>
             </center>
         """
-    
-    @router.post('/signup', response_model=UserCreate, status_code=201)
-    async def signup(self, user: UserCreate, background_tasks: BackgroundTasks, db: AsyncSession=Depends(get_session)):
-        db_user: User = await self.auth.register(user, db)
-        if db_user is None:
-            return HttpResponseBadRequest({
-                "status": "fail",
-                "data": {
-                    "message": "El correo electronico ya se encuentra registrado"
-                }
-            }).response()
-        access_token: str = JwtService.encode(
-            payload={
-                "iss": "jerseyshop.com",
-                "sub": db_user.uid,
-                "iat": datetime.datetime.utcnow(),
-                "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=15)
-            },
-            encrypt=True
-        )
         background_tasks.add_task(
             self.email.send_email, 
             [user.email], 
             "Bienvenido: verifica tu cuenta", 
-            message=self.message_format.format(user.name, access_token), 
+            message=message_format.format(user.name, access_token), 
             format='html'
         )
         return HttpResponseCreated({

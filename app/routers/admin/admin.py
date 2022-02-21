@@ -10,18 +10,22 @@ router = InferringRouter()
 router.include_router(
     router=dashboard.router,
     prefix='/dashboard',
+    tags=['Dashboard']
 )
 router.include_router(
     router=advertisement.router,
-    prefix='/advertisements'
+    prefix='/advertisements',
+    tags=['Advertisements']
 )
 router.include_router(
     router=inventory.router,
-    prefix='/inventory'
+    prefix='/inventory',
+    tags=['Inventory']
 )
 router.include_router(
     router=room.router,
-    prefix='/rooms'
+    prefix='/rooms',
+    tags=['Rooms']
 )
 
 @cbv(router)

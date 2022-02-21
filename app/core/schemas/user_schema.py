@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, DateTime, Boolean, TIMESTAMP, Table, ForeignKey, Integer
+from sqlalchemy import CHAR, Column, String, DateTime, Boolean, TIMESTAMP, Table, ForeignKey, Integer
 from sqlalchemy.orm import relationship, backref
 
 from app.core.database import Base, metadata
@@ -19,6 +19,13 @@ user_permissions = Table(
     Column('permission_id', Integer, ForeignKey('permissions.id'), primary_key=True)
 )
 
+user_favorites = Table(
+    'user_favorites',
+    metadata,
+    Column('user_id', String(36), ForeignKey('users.uid'), primary_key=True),
+    Column('product_code', CHAR(25), ForeignKey('products.code'), primary_key=True)
+)
+
 class User(Base):
     __tablename__ = 'users'
     uid = Column(String(36), primary_key=True, nullable=False)
@@ -32,9 +39,10 @@ class User(Base):
     accept_terms = Column(Boolean, default=False)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, default=datetime.datetime.utcnow())
     profile = relationship('Profile', back_populates='user', uselist=False)
-    groups = relationship('Group', secondary=user_groups, lazy='joined', backref=backref('users', lazy=True))
-    permissions = relationship('Permission', secondary=user_permissions, backref=backref('users', lazy=True))
-    room = relationship('Room')
+    groups = relationship('Group', secondary=user_groups, lazy='joined', backref=backref('users_groups', lazy=True))
+    permissions = relationship('Permission', secondary=user_permissions, lazy='joined', backref=backref('users_permissions', lazy=True))
+    favorites = relationship('Product', secondary=user_favorites, lazy='joined', backref=backref('users_favorites', lazy=True))
+    #room = relationship('Room')
 
     def __init__(
         self, 

@@ -5,8 +5,8 @@ from .app import create_application
 
 import socketio
 
-io = socketio.AsyncServer(logger=True, cors_allowed_origins=[str(origin) for origin in settings.BACKEND_CORS_ORIGINS], async_mode='asgi', ping_timeout=30000, always_connect=True)
 app = create_application()
+io = socketio.AsyncServer(logger=True, cors_allowed_origins=[str(origin) for origin in settings.BACKEND_CORS_ORIGINS], async_mode='asgi', ping_timeout=30000, always_connect=True)
 io_app = socketio.ASGIApp(io, app)
 
 @app.on_event('startup')
