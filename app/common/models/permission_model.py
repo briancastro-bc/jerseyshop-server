@@ -7,7 +7,7 @@ class PermissionBase(APIModel):
 class PermissionCreate(PermissionBase):
     pass
 
-class Permission(PermissionCreate):
+class PermissionModel(PermissionCreate):
     id: int
     
     class Config:

@@ -4,8 +4,9 @@ from pydantic import BaseModel, validator
 from fastapi import HTTPException
 from fastapi_utils.api_model import APIModel
 
-from .permission_model import Permission
-from .group_model import Group
+from .permission_model import PermissionModel
+from .group_model import GroupModel
+from .product_model import ProductModel
 
 import datetime
 
@@ -46,8 +47,10 @@ class UserModel(UserCreate):
     id: str
     is_verify: bool
     created_at: datetime.datetime
-    groups: List[Group]
-    permissions: List[Permission]
+    #profile: Optional[Profile] # TODO: Add the profile field to the model
+    groups: List[GroupModel]
+    permissions: List[PermissionModel]
+    favorites: List[ProductModel]
     
     class Config:
         orm_mode = True
@@ -61,3 +64,18 @@ class UserRecovery(BaseModel):
 class RefreshToken(APIModel):
     access_token: str
     refresh_token: Optional[bool]
+
+class UserResponseModel(APIModel):
+    uid: str
+    email: str
+    name: str
+    last_name: str
+    birthday: datetime.datetime
+    accept_advertising: Optional[bool]
+    accept_terms: Optional[bool]
+    is_verify: bool
+    created_at: datetime.datetime
+    #profile: Optional[Profile] # TODO: Add the profile field to the model
+    groups: List[GroupModel]
+    permissions: List[PermissionModel]
+    favorites: List[ProductModel]

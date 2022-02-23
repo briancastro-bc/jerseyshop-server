@@ -1,5 +1,4 @@
-from fastapi import BackgroundTasks, Depends, HTTPException
-
+from fastapi import HTTPException, BackgroundTasks, Query, Depends, Body
 from fastapi_utils.cbv import cbv
 from fastapi_utils.inferring_router import InferringRouter
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,7 +7,7 @@ from app.core import User
 from app.core.dependency import get_session
 from app.core.http import HttpResponseBadRequest, HttpResponseCreated, HttpResponseOK, HttpResponseUnauthorized
 from app.common.services import JwtService, EmailService
-from app.common.models import UserCreate, UserBase, UserRecovery, RefreshToken
+from app.common.models import UserCreate, UserBase, UserRecovery, RefreshToken, UserResponseModel
 
 from .auth_service import AuthService
 
@@ -23,7 +22,7 @@ class AuthController:
         self.auth = AuthService()
         self.email = EmailService()
     
-    @router.post('/signup', response_model=UserCreate, status_code=201)
+    @router.post('/signup', response_model=UserResponseModel, status_code=201)
     async def signup(self, user: UserCreate, background_tasks: BackgroundTasks, db: AsyncSession=Depends(get_session)):
         db_user: User = await self.auth.register(user, db)
         if db_user is None:
@@ -86,11 +85,10 @@ class AuthController:
             "data": {
                 "message": "Gracias por hacer parte de Jersey Shop. Te damos la bienvenida!",
                 "access_token": access_token,
-                #"user": db_user
             }
         }).response()
         
-    @router.post('/login', response_model=UserBase, status_code=200)
+    @router.post('/login', response_model=UserResponseModel, status_code=200)
     async def login(self, user: UserBase, db: AsyncSession=Depends(get_session)):
         db_user: User = await self.auth.login(user, db)
         if db_user is None:
@@ -109,16 +107,21 @@ class AuthController:
             },
             encrypt=True
         )
+        user = UserResponseModel(**db_user.__dict__) # Evito pasar la contraseña
         return HttpResponseOK({
             "status": "success",
             "data": {
                 "access_token": access_token,
-                "user": db_user
+                "user": user
             }
         }).response()
     
-    @router.get('/verifyAccount', status_code=200)
-    async def verify_account(self, token: str, db: AsyncSession=Depends(get_session)):
+    @router.get('/verifyAccount', response_model=None, status_code=200)
+    async def verify_account(
+        self, 
+        token: str=Query(None, title="Token provided query param"), 
+        db: AsyncSession=Depends(get_session)
+    ):
         decoded = JwtService.decode(encoded=token, validate=False)
         if type(decoded) is dict:
             return HttpResponseUnauthorized({
@@ -128,21 +131,21 @@ class AuthController:
                 }
             }).response()
         db_user = await self.auth.verify_account(decoded, db)
-        if not db_user:
-            return HttpResponseBadRequest({
-                "status": "fail",
+        if db_user:
+            return HttpResponseOK({
+                "status": "success",
                 "data": {
-                    "message": "La cuenta ya ha sido verificada"
+                    "message": "Tu cuenta ha sido verificada"
                 }
             }).response()
-        return HttpResponseOK({
-            "status": "success",
+        return HttpResponseBadRequest({
+            "status": "fail",
             "data": {
-                "message": "Tu cuenta ha sido verificada"
+                "message": "La cuenta ya ha sido verificada"
             }
         }).response()
     
-    @router.post('/passwordRecovery', status_code=201)
+    @router.post('/passwordRecovery', response_model=None, status_code=201)
     async def password_recovery(self, user: UserRecovery, background_tasks: BackgroundTasks, db: AsyncSession=Depends(get_session)):
         user: list = await self.auth.password_recovery(email=user.email, db=db)
         if user is None:
@@ -200,8 +203,8 @@ class AuthController:
         }).response()
     
     @router.post('/refreshToken', response_model=RefreshToken, status_code=201)
-    async def refresh_token(self, token: RefreshToken):
-        refresh_token = self.auth.refresh_token(access_token=token.access_token)
+    async def refresh_token(self, body=Body(..., title="Access token from the body")):
+        refresh_token = self.auth.refresh_token(body['access_token'])
         if refresh_token:
             return HttpResponseCreated({
                 "status": "success",

@@ -1,4 +1,5 @@
-from typing import Optional, List
+from typing import Optional
+from unicodedata import category
 
 from pydantic import validator
 from fastapi_utils.api_model import APIModel
@@ -25,3 +26,16 @@ class ProductCreate(ProductBase):
 
 class ProductModel(ProductCreate):
     created_at: Optional[datetime.datetime]
+
+class ProductPartialUpdate(APIModel):
+    name: Optional[str]
+    photos: Optional[str]
+    price: Optional[float]
+    stock: Optional[int]
+    colors: Optional[str]
+    vat: Optional[int]
+    detail: Optional[str]
+    sizes: Optional[Sizes]
+    category: Optional[str]
+    brand: Optional[str]
+    is_available: Optional[bool]

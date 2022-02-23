@@ -1,3 +1,3 @@
 from .jwt import JwtService
-from .file import FileService
+from .file import FileService, FileType
 from .email import EmailService

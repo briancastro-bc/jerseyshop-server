@@ -1,4 +1,5 @@
 from typing import Optional, List
+from unicodedata import name
 
 from fastapi_utils.api_model import APIModel
 
@@ -14,3 +15,9 @@ class RoomCreate(RoomBase):
 class RoomModel(RoomCreate):
     is_active: Optional[bool]
     #users: Optional[List[User]]
+
+class RoomUpdatePartial(APIModel):
+    code: Optional[str]
+    name: Optional[str]
+    limit: Optional[int]
+    is_active: Optional[bool]

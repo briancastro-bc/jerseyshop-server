@@ -1,8 +1,7 @@
-from fastapi import Depends
-
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import Depends, Path, Query
 from fastapi_utils.inferring_router import InferringRouter
 from fastapi_utils.cbv import cbv
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import Room, User
 from app.core.http import HttpResponseBadRequest, HttpResponseCreated, HttpResponseNotFound, HttpResponseOK
@@ -37,8 +36,8 @@ class RoomsController:
         }).response()
     
     @router.get('/{code}', response_model=RoomModel, status_code=200)
-    async def get_one(self, code: str, db: AsyncSession=Depends(get_session)):
-        db_room: Room = self.room.get_one(code, db)
+    async def get_by_code(self, code: str=Path(None, title="Get room by code"), db: AsyncSession=Depends(get_session)):
+        db_room: Room = await self.room.get_by_code(code, db)
         if db_room:
             return HttpResponseOK({
                 "status": "success",
@@ -72,13 +71,13 @@ class RoomsController:
         }).response()
     
     @router.put('/update/{code}', response_model=RoomModel, status_code=201)
-    async def update(self, code: str, room: RoomModel, db: AsyncSession=Depends(get_session)):
+    async def update(self, room: RoomModel, code: str=Path(None, title="Update room by code"), db: AsyncSession=Depends(get_session)):
         pass
 
     @router.patch('/edit/{code}', response_model=None, status_code=204)
-    async def edit(self, code: str, db: AsyncSession=Depends(get_session)):
+    async def edit(self, code: str=Path(None, title="Edit room by code"), db: AsyncSession=Depends(get_session)):
         pass
     
     @router.delete('/delete/{code}', response_model=None, status_code=204)
-    async def delete(self, code: str, db: AsyncSession=Depends(get_session)):
+    async def delete(self, code: str=Path(None, title="Delete room by code"), db: AsyncSession=Depends(get_session)):
         pass

@@ -72,45 +72,21 @@ class CategoryService:
     
     async def edit(self, code: str, category: CategoryParcialUpdate, db: AsyncSession):
         try:
-            query = await db.execute(select(Category).where(Category.code == code))
-            db_category = query.scalars().first()
-            if db_category:
-                edit_category = await db.execute(
-                    update(Category)
-                    .where(Category.code == code)
-                    .values(**category.dict(exclude_unset=True)) # Toma los valores del modelo y los pasa como un diccionario
-                    # luego de ello, ignora los valores con null
-                )
-                await db.commit()
-                return edit_category
-            return None
-        except Exception:
-            raise HTTPException(
-                400,
-                {
-                    "status": "fail",
-                    "data": {
-                        "message": "No pudimos editar la categoria",
-                    }
-                }
+            edit_category = await db.execute(
+                update(Category)
+                .where(Category.code == code)
+                .values(**category.dict(exclude_unset=True)) # Toma los valores del modelo y los pasa como un diccionario
+                # luego de ello, ignora los valores con null
             )
+            await db.commit()
+            return edit_category
+        except Exception:
+            return None
     
     async def delete(self, code: str, db: AsyncSession):
         try:
-            query = await db.execute(select(Category).where(Category.code == code))
-            db_category = query.scalars().first()
-            if db_category:
-                await db.execute(delete(Category).where(Category.code == db_category.code))
-                await db.commit()
-                return True
-            return False
+            await db.execute(delete(Category).where(Category.code == code))
+            await db.commit()
+            return True
         except Exception:
-            raise HTTPException(
-                400,
-                {
-                    "status": "fail",
-                    "data": {
-                        "message": "No se pudo borrar la categoria"
-                    }
-                }
-            )
+            return None

@@ -2,7 +2,7 @@ from typing import List
 
 from fastapi_utils.api_model import APIModel
 
-from .permission_model import Permission
+from .permission_model import PermissionModel
 
 class GroupBase(APIModel):
     name: str
@@ -11,9 +11,9 @@ class GroupBase(APIModel):
 class GroupCreate(GroupBase):
     pass
 
-class Group(GroupCreate):
+class GroupModel(GroupCreate):
     id: int
-    permissions: List[Permission]
+    permissions: List[PermissionModel]
     
     class Config:
         orm_mode = True
