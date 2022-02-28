@@ -1,5 +1,5 @@
 from app.core import settings, init_models, database
-from app.common.namespaces import SupportNamespace
+from app.namespaces import SupportNamespace
 
 from .app import create_application
 

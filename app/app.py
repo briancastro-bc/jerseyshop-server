@@ -1,8 +1,9 @@
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.sessions import SessionMiddleware
 
 from app.core import settings
-from app.routers import home, auth, admin, account
+from app.routers import auth, admin, account, root
 from app.common.hooks import jwt, required
 
 """
@@ -31,13 +32,17 @@ def create_application() -> FastAPI:
         allow_headers=["*"],
         expose_headers=["X-Refresh-Token"]
     )
+    _app.add_middleware(
+        SessionMiddleware,
+        secret_key=settings.SECRET_KEY
+    )
     
     """
         :public: Routers
     """
     _app.include_router(
-        router=home.router,
-        tags=['Public']
+        router=root.router,
+        tags=['Root']
     )
     _app.include_router(
         router=auth.router, 

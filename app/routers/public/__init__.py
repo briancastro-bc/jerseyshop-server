@@ -1,2 +1,2 @@
-from .home import home
 from .auth import auth
+from .root import root

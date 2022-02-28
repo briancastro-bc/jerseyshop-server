@@ -7,6 +7,7 @@ from passlib.context import CryptContext
 from app.core import User, Group, Profile
 from app.common.models import UserCreate, UserBase
 from app.common.services import JwtService
+from app.core.dependency import get_group
 
 import time, datetime
 
@@ -40,11 +41,9 @@ class AuthService:
                     photo="https://www.pngarts.com/files/3/Avatar-PNG-Pic.png"
                 )
                 new_user.profile = new_user_profile
-                query_group = await db.execute(select(Group).where(Group.code_name == 'users'))
-                db_group = query_group.scalars().first()
+                group = await get_group('users', db)
                 db.add(new_user)
-                #TODO: Resolve groups and permissions validation.
-                new_user.groups.append(db_group)
+                new_user.groups.append(group)
                 await db.commit()
                 return new_user
             except Exception as e:

@@ -1,3 +1,3 @@
-from .public import home, auth
+from .public import auth, root
 from .private import account
 from .admin import admin

@@ -1,4 +1,5 @@
 from fastapi import HTTPException
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import Advertisement
@@ -11,9 +12,13 @@ class AdvertisementService:
     
     async def get_all(self, db: AsyncSession):
         try:
-            pass
+            query = await db.execute(select(Advertisement).order_by(Advertisement.time_ago))
+            db_advertisements = query.scalars().all()
+            if db_advertisements:
+                return db_advertisements
+            return None
         except:
-            pass
+            return None
     
     async def create(self, advertisement: AdvertisementCreate, db: AsyncSession):
         try:

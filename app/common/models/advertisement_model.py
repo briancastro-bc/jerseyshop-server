@@ -10,6 +10,7 @@ class AdvertisementBase(APIModel):
 
 class AdvertisementCreate(AdvertisementBase):
     hyperlink: str
+    is_public: Optional[bool]
 
 class AdvertisementModel(AdvertisementCreate):
     uid: Optional[str]

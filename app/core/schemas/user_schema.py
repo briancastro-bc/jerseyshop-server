@@ -52,7 +52,7 @@ class User(Base):
         birthday: str=None, 
         accept_advertising: bool=None, 
         accept_terms: bool=None, 
-        password: str=None
+        password: str=None,
     ) -> None:
         super().__init__()
         self.uid = self.generate_uid()

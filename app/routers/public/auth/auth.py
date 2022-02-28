@@ -1,12 +1,13 @@
-from fastapi import HTTPException, BackgroundTasks, Query, Depends, Body
+from fastapi import HTTPException, BackgroundTasks, Request, Query, Depends, Body
 from fastapi_utils.cbv import cbv
 from fastapi_utils.inferring_router import InferringRouter
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core import User
-from app.core.dependency import get_session
+from app.core import User, Profile, settings
+from app.core.dependency import get_session, get_group
 from app.core.http import HttpResponseBadRequest, HttpResponseCreated, HttpResponseOK, HttpResponseUnauthorized
-from app.common.services import JwtService, EmailService
+from app.common.services import JwtService, EmailService, OAuth2Service
 from app.common.models import UserCreate, UserBase, UserRecovery, RefreshToken, UserResponseModel
 
 from .auth_service import AuthService
@@ -20,6 +21,16 @@ class AuthController:
     
     def __init__(self) -> None:
         self.auth = AuthService()
+        self.oauth2 = OAuth2Service(
+            provider='google',
+            client_id=settings.GOOGLE_CLIENT_ID,
+            client_secret=settings.GOOGLE_CLIENT_SECRET,
+            server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
+            authorize_url='https://accounts.google.com/o/oauth2/v2/auth',
+            client_kwargs={
+                'scope': 'openid profile email'
+            }
+        )
         self.email = EmailService()
     
     @router.post('/signup', response_model=UserResponseModel, status_code=201)
@@ -113,6 +124,55 @@ class AuthController:
             "data": {
                 "access_token": access_token,
                 "user": user
+            }
+        }).response()
+    
+    @router.get('/google', response_model=None, status_code=200)
+    async def google_login(self, request: Request):
+        return await self.oauth2.google_login(request)
+    
+    @router.get('/google/authorize', response_model=None, status_code=200)
+    async def google_authorize(self, request: Request, db: AsyncSession=Depends(get_session)):
+        google_authorize = await self.oauth2.google_authorize(request)
+        if google_authorize:
+            query = await db.execute(select(User).where(User.email == google_authorize['email']))
+            db_user = query.scalars().first()
+            if not db_user:
+                new_user = User(
+                    email=google_authorize['email'],
+                    name=google_authorize['given_name'],
+                    last_name=google_authorize['family_name'],
+                    birthday=datetime.datetime.utcnow(),
+                    accept_advertising=False,
+                    accept_terms=True
+                )
+                new_user_profile = Profile(
+                    user_uid=new_user.uid,
+                    phone_number="0",
+                    photo=google_authorize['picture']
+                )
+                new_user.profile = new_user_profile
+                group = await get_group('users', db)
+                db.add(new_user)
+                new_user.groups.append(group)
+                await db.commit()
+            access_token: str = JwtService.encode({
+                "iss": google_authorize['iss'],
+                "sub": db_user.uid,
+                "iat": google_authorize['iat'],
+                "exp": google_authorize['exp']
+            }, encrypt=True)
+            return HttpResponseOK({
+                "status": "success",
+                "data": {
+                    "message": "Te hemos autenticado con Google",
+                    "access_token": access_token
+                }
+            }).response()
+        return HttpResponseBadRequest({
+            "status": "fail",
+            "data": {
+                "message": "No pudimos realizar la autenticacion con Google"
             }
         }).response()
     

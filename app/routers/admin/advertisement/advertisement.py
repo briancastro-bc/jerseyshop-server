@@ -6,7 +6,7 @@ from fastapi_utils.inferring_router import InferringRouter
 from fastapi_utils.cbv import cbv
 
 from app.core import Advertisement
-from app.core.http import HttpResponseBadRequest, HttpResponseCreated, HttpResponseNotFound
+from app.core.http import HttpResponseBadRequest, HttpResponseCreated, HttpResponseNotFound, HttpResponseOK
 from app.core.dependency import get_session
 from app.common.models import AdvertisementCreate, AdvertisementModel
 
@@ -24,7 +24,12 @@ class AdvertisementController:
     async def get_all(self, db: AsyncSession=Depends(get_session)):
         advertisements: Advertisement = await self.service.get_all(db)
         if advertisements:
-            pass
+            return HttpResponseOK({
+                "status": "success",
+                "data": {
+                    "advertisements": advertisements
+                }
+            }).response()
         return HttpResponseNotFound({
             "status": "fail",
             "data": {

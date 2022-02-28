@@ -2,9 +2,10 @@ from typing import Any
 
 from fastapi import Depends, HTTPException, Header
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core import User
+from app.core import User, Group, Permission
 from app.core.database import async_session
 from app.common.services import JwtService
 
@@ -35,3 +36,8 @@ async def get_current_user(decoded: Any=Depends(get_payload_from_token), db: Asy
         )
     db_current_user: User = await db.get(User, decoded['sub'])
     return db_current_user
+
+async def get_group(code_name: str, db: AsyncSession):
+    query = await db.execute(select(Group).where(Group.code_name == code_name))
+    db_group = query.scalars().first()
+    return db_group
