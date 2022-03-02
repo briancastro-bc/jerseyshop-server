@@ -123,7 +123,7 @@ class AuthController:
             "status": "success",
             "data": {
                 "access_token": access_token,
-                "user": user
+                #"user": user
             }
         }).response()
     

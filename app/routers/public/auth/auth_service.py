@@ -1,6 +1,6 @@
 from fastapi import HTTPException
 
-from sqlalchemy import select 
+from sqlalchemy import select, insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from passlib.context import CryptContext
 
@@ -24,7 +24,7 @@ class AuthService:
         query = await db.execute(select(User).where(User.email == user.email))
         db_user = query.scalars().first()
         if not db_user or db_user is None:
-            hash_password: str = self._get_password_hash(user.password)
+            hash_password = self._get_password_hash(user.password)
             try:
                 new_user = User(
                     email=user.email, 
@@ -37,7 +37,8 @@ class AuthService:
                 )
                 new_user_profile = Profile(
                     user_uid=new_user.uid,
-                    phone_number="1234567890",
+                    phone_number=user.profile.phone_number,
+                    gender=user.profile.gender,
                     photo="https://www.pngarts.com/files/3/Avatar-PNG-Pic.png"
                 )
                 new_user.profile = new_user_profile

@@ -7,6 +7,7 @@ from fastapi_utils.api_model import APIModel
 from .permission_model import PermissionModel
 from .group_model import GroupModel
 from .product_model import ProductModel
+from .profile_model import ProfileCreate, ProfileModel
 
 import datetime
 
@@ -39,15 +40,15 @@ class UserCreate(UserBase):
     birthday: datetime.datetime
     accept_advertising: Optional[bool]
     accept_terms: Optional[bool]
+    profile: ProfileCreate
     
     class Config:
         orm_mode = True
     
 class UserModel(UserCreate):
-    id: str
+    uid: str
     is_verify: bool
     created_at: datetime.datetime
-    #profile: Optional[Profile] # TODO: Add the profile field to the model
     groups: List[GroupModel]
     permissions: List[PermissionModel]
     favorites: List[ProductModel]
@@ -75,7 +76,7 @@ class UserResponseModel(APIModel):
     accept_terms: Optional[bool]
     is_verify: bool
     created_at: datetime.datetime
-    #profile: Optional[Profile] # TODO: Add the profile field to the model
+    profile: Optional[ProfileModel] # TODO: Add the profile field to the model
     groups: List[GroupModel]
     permissions: List[PermissionModel]
     favorites: List[ProductModel]

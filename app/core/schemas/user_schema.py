@@ -38,7 +38,7 @@ class User(Base):
     accept_advertising = Column(Boolean, default=False)
     accept_terms = Column(Boolean, default=False)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, default=datetime.datetime.utcnow())
-    profile = relationship('Profile', back_populates='user', uselist=False)
+    profile = relationship('Profile', back_populates='user', lazy='joined', uselist=False)
     groups = relationship('Group', secondary=user_groups, lazy='joined', backref=backref('users_groups', lazy=True))
     permissions = relationship('Permission', secondary=user_permissions, lazy='joined', backref=backref('users_permissions', lazy=True))
     favorites = relationship('Product', secondary=user_favorites, lazy='joined', backref=backref('users_favorites', lazy=True))
