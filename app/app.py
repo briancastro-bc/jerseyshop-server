@@ -9,7 +9,7 @@ from app.common.hooks import jwt, required
 """
     :function create_application - Construye la instancia de FastAPI y configura todo
     lo relacionado con el servidor.
-    :returns instancia de FastAPI.
+    :returns instancia de la aplicacion aplicando las configuraciones.
 """
 def create_application() -> FastAPI:
     

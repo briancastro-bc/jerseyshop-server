@@ -1,9 +1,9 @@
 from typing import List, Optional
 
-from fastapi import HTTPException
 from aiosmtplib import SMTP
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from fastapi import HTTPException
 
 from app.core.config import settings
 
