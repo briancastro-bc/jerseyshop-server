@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Optional
 from fastapi import Depends, Query, Path, BackgroundTasks
 from fastapi_utils.inferring_router import InferringRouter
 from fastapi_utils.cbv import cbv
@@ -42,7 +42,7 @@ class AdvertisementController:
         ),
         session: AsyncSession=Depends(Dependency.get_session)
     ):
-        advertisements: List[Advertisement] = await AdvertisementService.get_all_protected(
+        advertisements: list[Advertisement] = await AdvertisementService.get_all_protected(
             order_by=order_by,
             limit=limit,
             skip=skip,
@@ -106,7 +106,7 @@ class AdvertisementController:
                 result = await session.execute(
                     text('SELECT email FROM users WHERE accept_advertising = true')
                 )
-                users: List = result.all()
+                users: list = result.all()
                 emails = [user['email'] for user in users]
                 backgroundTasks.add_task(
                     self.email.send_email,

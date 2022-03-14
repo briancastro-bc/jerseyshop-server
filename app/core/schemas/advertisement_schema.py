@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, CHAR, TIMESTAMP, Boolean, DATE
+from sqlalchemy import Column, String, CHAR, TIMESTAMP, Boolean, DateTime
 
 from app.core.database import Base
 
@@ -13,7 +13,7 @@ class Advertisement(Base):
     time_ago = Column(TIMESTAMP(True), nullable=False, default=datetime.datetime.utcnow())
     is_active = Column(Boolean, nullable=False, default=True)
     is_public = Column(Boolean, nullable=False, default=True)
-    expired_date = Column(DATE, nullable=True)
+    expired_date = Column(DateTime, nullable=True)
     
     def __init__(
         self,
@@ -22,7 +22,7 @@ class Advertisement(Base):
         title: str=None,
         is_active: bool=None,
         is_public: bool=None,
-        expired_date: datetime.date=None
+        expired_date: datetime.datetime=None
     ) -> None:
         self.uid = self.generate_uuid()
         self.title = title

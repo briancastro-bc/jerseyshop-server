@@ -46,9 +46,9 @@ class AdvertisementCreate(AdvertisementBase):
         description='Especifica la fecha limite la cual durara el anuncio'
     )
     
-    @validator('expired_date')
+    """@validator('expired_date')
     def valid_expired_date(cls, v: Any):
-        pass
+        pass"""
 
 class AdvertisementModel(AdvertisementCreate):
     time_ago: Optional[datetime.datetime]
