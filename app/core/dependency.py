@@ -62,14 +62,19 @@ class Dependency(object):
     
     @property
     def session(self) -> AsyncSession:
-        return self._get_session()
-    
-    def __init__(self) -> None:
-        pass
+        return self.__session
     
     def __call__(self, *args: Any, **kwds: Any) -> Any:
         print('Called instance')
         
+    @classmethod
+    async def get_session(cls) -> AsyncSession:
+        async with async_session() as session:
+            try:
+                yield session
+            finally:
+                await session.close()
+    
     @classmethod
     async def get_user(cls, current: bool, id: str=None) -> User:
         if current:
@@ -97,12 +102,5 @@ class Dependency(object):
                 validate=True
             )
             return payload
-        pass    
+        pass
         
-    @classmethod
-    async def _get_session(cls) -> AsyncSession:
-        async with async_session() as session:
-            try:
-                yield session
-            finally:
-                session.close()

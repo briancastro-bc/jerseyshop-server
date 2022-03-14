@@ -4,7 +4,7 @@ from fastapi_utils.cbv import cbv
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import Advertisement, Room
-from app.core.dependency import get_session
+from app.core.dependency import get_session, Dependency
 from app.core.http import HttpResponseNotFound, HttpResponseOK
 from app.common.models import AdvertisementModel
 
@@ -17,12 +17,16 @@ router = InferringRouter()
 class RootController:
     
     def __init__(self) -> None:
-        self.advertisements_service = AdvertisementService()
         self.rooms_service = RoomService()
     
     @router.get('/advertisements', response_model=AdvertisementModel, status_code=200)
-    async def advertisements(self, db: AsyncSession=Depends(get_session)):
-        advertisements: Advertisement = await self.advertisements_service.get_all(db)
+    async def advertisements(
+        self, 
+        session: AsyncSession=Depends(Dependency.get_session)
+    ):
+        advertisements: list[Advertisement] = await AdvertisementService.get_all_public(
+            session=session
+        )
         if advertisements:
             return HttpResponseOK({
                 "status": "success",
