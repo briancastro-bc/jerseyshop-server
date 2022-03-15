@@ -1,6 +1,5 @@
 from typing import Optional, List
-
-from pydantic import BaseModel, validator
+from pydantic import Field, validator
 from fastapi import HTTPException
 from fastapi_utils.api_model import APIModel
 
@@ -12,8 +11,15 @@ from .profile_model import ProfileCreate, ProfileModel
 import datetime
 
 class UserBase(APIModel):
-    email: str
-    password: str
+    email: str = Field(
+        ...,
+        max_length=70
+    )
+    password: str = Field(
+        ...,
+        max_length=24,
+        min_length=9
+    )
     
     @validator('email', pre=True, always=True)
     def email_contain_at_and_dot(cls, v: str):
@@ -35,32 +41,47 @@ class UserBase(APIModel):
         arbitrary_types_allowed = True
 
 class UserCreate(UserBase):
-    name: str
-    last_name: str
-    birthday: datetime.datetime
-    accept_advertising: Optional[bool]
-    accept_terms: Optional[bool]
+    name: str = Field(
+        ...,
+        alias='username',
+        max_length=40,
+        min_length=3
+    )
+    last_name: str = Field(
+        ...,
+        max_length=60,
+    )
+    birthday: datetime.datetime = Field(
+        ...,
+        alias='birthday'
+    )
+    accept_advertising: Optional[bool] = Field(
+        None
+    )
+    accept_terms: Optional[bool] = Field(
+        None
+    )
     profile: ProfileCreate
     
-    class Config:
-        orm_mode = True
-    
 class UserModel(UserCreate):
-    uid: str
-    is_verify: bool
-    created_at: datetime.datetime
+    uid: str = Field(
+        ...,
+        const=True,
+        alias='unique-identifier'
+    )
+    is_verify: bool = Field(
+        ...
+    )
+    created_at: datetime.datetime = Field(
+        ...,
+        alias='create-timestamp'
+    )
     groups: List[GroupModel]
     permissions: List[PermissionModel]
     favorites: List[ProductModel]
-    
-    class Config:
-        orm_mode = True
 
-class UserRecovery(BaseModel):
+class UserRecovery(APIModel):
     email: str
-    
-    class Config:
-        orm_mode = True
 
 class RefreshToken(APIModel):
     access_token: str

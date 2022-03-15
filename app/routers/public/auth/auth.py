@@ -5,10 +5,11 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import User, Profile, settings
-from app.core.dependency import get_session, get_group
+from app.core.dependency import get_session, get_group, Dependency
 from app.core.http import HttpResponseBadRequest, HttpResponseCreated, HttpResponseOK, HttpResponseUnauthorized
 from app.common.services import JwtService, EmailService, OAuth2Service
 from app.common.models import UserCreate, UserBase, UserRecovery, RefreshToken, UserResponseModel
+from app.common.helpers import REGISTER_USER_FORMAT, PASSWORD_RECOVERY_FORMAT
 
 from .auth_service import AuthService
 
@@ -20,7 +21,7 @@ router = InferringRouter()
 class AuthController:
     
     def __init__(self) -> None:
-        self.auth = AuthService()
+        self.email = EmailService()
         self.oauth2 = OAuth2Service(
             provider='google',
             client_id=settings.GOOGLE_CLIENT_ID,
@@ -31,99 +32,79 @@ class AuthController:
                 'scope': 'openid profile email'
             }
         )
-        self.email = EmailService()
     
-    @router.post('/signup', response_model=UserResponseModel, status_code=201)
-    async def signup(self, user: UserCreate, background_tasks: BackgroundTasks, db: AsyncSession=Depends(get_session)):
-        db_user: User = await self.auth.register(user, db)
-        if db_user is None:
-            return HttpResponseBadRequest({
-                "status": "fail",
+    @router.post('/signup', response_model=None, status_code=201)
+    async def signup(
+        self, 
+        user: UserCreate, 
+        background_tasks: BackgroundTasks, 
+        session: AsyncSession=Depends(Dependency.get_session)
+    ):
+        new_user: User = await AuthService.create_user(
+            user=user,
+            session=session
+        )
+        if new_user:
+            access_token: str = JwtService.encode(
+                payload={
+                    "iss": "jerseyshop.com",
+                    "sub": new_user.uid,
+                    "iat": datetime.datetime.utcnow(),
+                    "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=15)
+                },
+                encrypt=True
+            )
+            background_tasks.add_task(
+                self.email.send_email, 
+                [user.email], 
+                "Bienvenido: verifica tu cuenta", 
+                message=REGISTER_USER_FORMAT.format(user.name, access_token), 
+                format='html'
+            )
+            return HttpResponseCreated({
+                "status": "success",
                 "data": {
-                    "message": "El correo electronico ya se encuentra registrado"
+                    "message": "Gracias por hacer parte de Jersey Shop. Te damos la bienvenida!",
+                    "access_token": access_token,
                 }
             }).response()
-        access_token: str = JwtService.encode(
-            payload={
-                "iss": "jerseyshop.com",
-                "sub": db_user.uid,
-                "iat": datetime.datetime.utcnow(),
-                "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=15)
-            },
-            encrypt=True
-        )
-        message_format = """
-            <center>
-                <div style="padding: 0%;
-                margin: 0%;
-                width: 75%;
-                height: 100%;
-                border:1px solid rgba(0,0,0,0.25);
-                padding: 24px;
-                border-radius: 25px;
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;"
-                >
-                <img style="width: 75%;
-                            float: left;
-                            margin-left: 16%;"
-                src="https://i.imgur.com/ezOUjf5.png" alt="Company logo">
-                <br style="clear: both;">
-                <center>
-                <h1 style="font-weight: 400;">Hola <strong>{0}</strong></h1> <h2 style="font-weight: 400; font-size:24px;"><br>¡Gracias por registrarte en Jersey Shop!</h2>
-                <h2 style="font-weight: 400;">Sólo falta un último paso, y, con esto, podrás acceder a las <strong>compras online</strong> y <strong>contenido único para tí</strong> <br><br><a
-                    style="color: white;
-                        padding: 10px;
-                        border-radius: 50px;
-                        background-color: rgb(10, 137, 255);
-                        font-style: none;
-                        text-decoration: none;
-                        font-size: 1.3rem;"
-                    href="http://localhost:8000/auth/verifyAccount?token={1}">Verificar cuenta</a>
-                </h2>
-                </center>
-            </div>
-            </center>
-        """
-        background_tasks.add_task(
-            self.email.send_email, 
-            [user.email], 
-            "Bienvenido: verifica tu cuenta", 
-            message=message_format.format(user.name, access_token), 
-            format='html'
-        )
-        return HttpResponseCreated({
-            "status": "success",
+        return HttpResponseBadRequest({
+            "status": "fail",
             "data": {
-                "message": "Gracias por hacer parte de Jersey Shop. Te damos la bienvenida!",
-                "access_token": access_token,
+                "message": "El correo electronico ya se encuentra registrado"
             }
         }).response()
         
-    @router.post('/login', response_model=UserResponseModel, status_code=200)
-    async def login(self, user: UserBase, db: AsyncSession=Depends(get_session)):
-        db_user: User = await self.auth.login(user, db)
-        if db_user is None:
-            return HttpResponseUnauthorized({
-                "status": "fail",
+    @router.post('/login', response_model=None, status_code=200)
+    async def login(
+        self, 
+        user: UserBase, 
+        session: AsyncSession=Depends(Dependency.get_session)
+    ):
+        existented_user: User = await AuthService.verify_user(
+            user=user,
+            session=session
+        )
+        if existented_user:
+            access_token: str = JwtService.encode(
+                payload={
+                    "iss": "jerseyshop.com",
+                    "sub": existented_user.uid,
+                    "iat": datetime.datetime.utcnow(),
+                    "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=15)
+                },
+                encrypt=True
+            )
+            return HttpResponseOK({
+                "status": "success",
                 "data": {
-                    "message": "Las credenciales de acceso son incorrectas"
+                    "access_token": access_token,
                 }
             }).response()
-        access_token: str = JwtService.encode(
-            payload={
-                "iss": "jerseyshop.com",
-                "sub": db_user.uid,
-                "iat": datetime.datetime.utcnow(),
-                "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=15)
-            },
-            encrypt=True
-        )
-        user = UserResponseModel(**db_user.__dict__) # Evito pasar la contraseña
-        return HttpResponseOK({
-            "status": "success",
+        return HttpResponseUnauthorized({
+            "status": "fail",
             "data": {
-                "access_token": access_token,
-                #"user": user
+                "message": "Las credenciales de acceso son incorrectas"
             }
         }).response()
     
@@ -178,20 +159,28 @@ class AuthController:
     
     @router.get('/verifyAccount', response_model=None, status_code=200)
     async def verify_account(
-        self, 
-        token: str=Query(None, title="Token provided query param"), 
-        db: AsyncSession=Depends(get_session)
+        cls, 
+        token: str=Query(
+            None, 
+            alias='JWT',
+            title='Token',
+            description='Token enviado por parametros para verificar al usuario',
+        ), 
+        session: AsyncSession=Depends(Dependency.get_session)
     ):
-        decoded = JwtService.decode(encoded=token, validate=False)
-        if type(decoded) is dict:
+        payload = JwtService.decode(encoded=token, validate=False)
+        if type(payload) is dict:
             return HttpResponseUnauthorized({
                 "status": "fail",
                 "data": {
-                    "message": decoded.get('message')
+                    "message": payload.get('message')
                 }
             }).response()
-        db_user = await self.auth.verify_account(decoded, db)
-        if db_user:
+        verified_user = await AuthService.verify_account(
+            payload=payload,
+            session=session
+        )
+        if verified_user:
             return HttpResponseOK({
                 "status": "success",
                 "data": {
@@ -206,65 +195,47 @@ class AuthController:
         }).response()
     
     @router.post('/passwordRecovery', response_model=None, status_code=201)
-    async def password_recovery(self, user: UserRecovery, background_tasks: BackgroundTasks, db: AsyncSession=Depends(get_session)):
-        user: list = await self.auth.password_recovery(email=user.email, db=db)
-        if user is None:
-            return HttpResponseBadRequest({
-                "status": "fail",
+    async def password_recovery(
+        self, 
+        user: UserRecovery, 
+        background_tasks: BackgroundTasks, 
+        session: AsyncSession=Depends(Dependency.get_session)
+    ):
+        data: dict = await AuthService.password_recovery(
+            email=user.email,
+            session=session
+        )
+        if data:
+            background_tasks.add_task(
+                self.email.send_email,
+                [data['user'].email],
+                "Recuperación: restablecimiento de contraseña",
+                message=PASSWORD_RECOVERY_FORMAT.format(data['user'].name, data['new_password']),
+                format='html'
+            )
+            return HttpResponseCreated({
+                "status": "success",
                 "data": {
-                    "message": "No hay ninguna cuenta registrada con el correo electrónico indicado"
+                    "message": "Hemos enviado un email de confirmación"
                 }
             }).response()
-        message_format = """
-                <center>
-                    <div style="padding: 0%;
-                    margin: 0%;
-                    width: 75%;
-                    height: 100%;
-                    border:1px solid rgba(0,0,0,0.25);
-                    padding: 24px;
-                    border-radius: 25px;
-                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;"
-                    >
-                    <img style="width: 75%;
-                                float: left;
-                                margin-left: 16%;"
-                    src="https://i.imgur.com/ezOUjf5.png" alt="Company logo">
-                    <br style="clear: both;">
-                    <center>
-                    <h1 style="font-weight: 400;">Hola <strong>{0}</strong></h1> <h2 style="font-weight: 400; font-size:24px;"><br>¿Parece que intentas recuperar tú contraseña?</h2>
-                    <h2 style="font-weight: 400;">A continuación, creamos una nueva para tí <br><br>
-                        <span
-                        style="color: white;
-                            padding: 10px;
-                            border-radius: 0;
-                            background-color: rgb(10, 137, 255);
-                            font-style: none;
-                            text-decoration: none;
-                            font-size: 1.3rem;"
-                        ">{1}</span>
-                    </h2>
-                    </center>
-                </div>
-                </center>
-            """.format(user[0].name, user[1])
-        background_tasks.add_task(
-            self.email.send_email,
-            [user[0].email],
-            "Recuperación: restablecimiento de contraseña",
-            message=message_format,
-            format='html'
-        )
-        return HttpResponseCreated({
-            "status": "success",
+        return HttpResponseBadRequest({
+            "status": "fail",
             "data": {
-                "message": "Hemos enviado un email de confirmación"
+                "message": "No hay ninguna cuenta registrada con el correo electrónico indicado"
             }
         }).response()
     
     @router.post('/refreshToken', response_model=RefreshToken, status_code=201)
-    async def refresh_token(self, body=Body(..., title="Access token from the body")):
-        refresh_token = self.auth.refresh_token(body['access_token'])
+    async def refresh_token(
+        self, 
+        body=Body(
+            ..., 
+            title="Access Token",
+            description='Access token obtained from the body request'
+        )
+    ):
+        refresh_token = AuthService.refresh_token(body['access_token'])
         if refresh_token:
             return HttpResponseCreated({
                 "status": "success",

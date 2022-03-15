@@ -1,6 +1,6 @@
+from typing import Any
 from fastapi import HTTPException
-
-from sqlalchemy import select, insert
+from sqlalchemy import select, insert, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from passlib.context import CryptContext
 
@@ -13,22 +13,33 @@ import time, datetime
 
 class AuthService:
     
-    def __init__(self) -> None:
-        self.__password_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
+    __password_ctx__ = CryptContext(
+        schemes=["bcrypt"],
+        deprecated="auto"
+    )
     
     """
-        :method register - Crea un nuevo usuario en la base de datos pasandole un perfil
+        :classmethod create_user - Crea un nuevo usuario en la base de datos pasandole un perfil
         asociado a ese nuevo usuario.
+        :param user - Representa el objeto del nuevo usuario que se creara.
     """
-    async def register(self, user: UserCreate, db: AsyncSession):
-        query = await db.execute(select(User).where(User.email == user.email))
-        db_user = query.scalars().first()
-        if not db_user or db_user is None:
-            hash_password = self._get_password_hash(user.password)
+    @classmethod
+    async def create_user(
+        cls, 
+        user: UserCreate, 
+        session: AsyncSession
+    ) -> User:
+        result = await session.execute(
+            text('SELECT email FROM users WHERE email = :email').\
+            bindparams(email=user.email)
+        )
+        existented_user = result.first()
+        if not existented_user:
+            encrypted_password: str = cls._get_password_hash(user.password)
             try:
                 new_user = User(
                     email=user.email, 
-                    password=hash_password, 
+                    password=encrypted_password, 
                     name=user.name, 
                     last_name=user.last_name, 
                     birthday=user.birthday, 
@@ -42,66 +53,113 @@ class AuthService:
                     photo="https://www.pngarts.com/files/3/Avatar-PNG-Pic.png"
                 )
                 new_user.profile = new_user_profile
-                group = await get_group('users', db)
-                db.add(new_user)
+                group = await get_group('users', session)
+                session.add(new_user)
                 new_user.groups.append(group)
-                await db.commit()
+                await session.commit()
                 return new_user
             except Exception as e:
-                raise HTTPException(status_code=400, detail={
+                raise HTTPException(
+                    400,
+                    {
                     "status": "fail",
                     "data": {
-                        "message": "Ocurrio un error",
-                        "exception": "{}".format(e)
+                        "message": "No se pudo registrar el usuario",
                     }
                 })
         return None
     
-    async def login(self, user: UserBase, db: AsyncSession):
-        query = await db.execute(select(User).where(User.email == user.email))
-        db_user = query.scalars().first()
-        if db_user:
-            verify_password = self._verify_password(user.password, db_user.password)
+    """
+        :classmethod verify_user - Verifica al usuario que este intentando ingresar
+        :param user - El objeto de usuario que intenta iniciar sesion
+    """
+    @classmethod
+    async def verify_user(
+        cls, 
+        user: UserBase, 
+        session: AsyncSession
+    ) -> User:
+        result = await session.execute(
+            select(User).where(
+                User.email == user.email
+            )
+        )
+        existented_user: User = result.scalars().first()
+        if existented_user:
+            verify_password: bool = cls._verify_password(user.password, existented_user.password)
             if verify_password:
-                return db_user
-            return None
+                return existented_user
+            return False
         return None
     
-    async def verify_account(self, decoded, db: AsyncSession):
-        db_user: User = await db.get(User, decoded['sub'])
-        if db_user:
-            if not db_user.is_verify:
-                db_user.is_verify = True
-                await db.commit()
-                return db_user
+    """
+        :classmethod verify_account - Verifica una cuenta de usuario apartir de un payload.
+        :param decoded - Determina el payload almacenado por el usuario
+    """
+    @classmethod
+    async def verify_account(
+        cls, 
+        payload: Any, 
+        session: AsyncSession
+    ) -> User:
+        user: User = await session.get(User, payload['sub'])
+        if user:
+            if not user.is_verify:
+                user.is_verify = True
+                await session.commit()
+                return user
             return None
-        raise HTTPException(401, {
-            "status": "fail",
-            "data": {
-                "message": "La cuenta del usuario es inválida o no existe"
+        raise HTTPException({
+            400,
+            {
+                "status": "fail",
+                "data": {
+                    "message": "La cuenta de usuario es invalida o no existe"
+                }
             }
         })
-        
-    async def password_recovery(self, email: str, db: AsyncSession):
-        query = await db.execute(select(User).where(User.email == email))
-        db_user: User = query.scalars().first()
-        if db_user:
-            new_password: str = self._create_new_password()
-            hash_password = self._get_password_hash(new_password)
-            db_user.password = hash_password
-            await db.commit()
-            return [db_user, new_password]
+    
+    """
+        :classmethod password_recovery - Valida si un usuario existe y en dado caso, le asigna una nueva contrasena
+        :param email - El email del posible usuario
+    """
+    @classmethod
+    async def password_recovery(
+        cls, 
+        email: str, 
+        session: AsyncSession
+    ):
+        result = await session.execute(
+            select(User).where(
+                User.email == email
+            )
+        )
+        user: User = result.scalars().first()
+        if user:
+            new_password: str = cls._create_new_password()
+            encrypted_password = cls._get_password_hash(new_password)
+            user.password = encrypted_password
+            await session.commit()
+            return dict(user=user, new_password=new_password)
         return None
         
-    def refresh_token(self, access_token: str):
-        decoded = JwtService.decode(encoded=access_token, validate=True)
-        if type(decoded) is dict:
+    """
+        :classmethod refresh_token - Refresca el token de acceso JWT.
+        :param access_token - El token actual que tiene el usuario.
+    """
+    @classmethod
+    def refresh_token(
+        cls, 
+        access_token: str
+    ):
+        payload = JwtService.decode(encoded=access_token, validate=True)
+        if type(payload) is dict:
             return None
-        if decoded['exp'] <= time.time() + 600:
+        if payload['exp'] <= time.time() + 600:
             new_token: str = JwtService.encode(
                 payload={
                     "iss": "jerseyshop.com",
-                    "sub": decoded['sub'],
+                    "sub": payload['sub'],
                     "iat": datetime.datetime.utcnow(),
                     "exp": datetime.datetime.utcnow() + datetime.timedelta(days=1)
                 },
@@ -110,17 +168,43 @@ class AuthService:
             return new_token
         return access_token
     
-    def _get_password_hash(self, password: str):
-        return self.__password_ctx.hash(password)
+    """
+        :classmethod _get_password_hash - Retorna una nueva contraseña encriptada a partir de un texto plano.
+        :param password - La contrasena en texto plano a encriptar
+        :returns - La contrasena encriptada.
+    """
+    @classmethod
+    def _get_password_hash(cls, password: str) -> str:
+        return cls.__password_ctx__.hash(password)
     
-    def _verify_password(self, plain_password: str or bytes, h_password: str or bytes):
-        return self.__password_ctx.verify(plain_password, h_password)
+    """
+        :classmehtod _verify_password - Valida si un texto plano coincide con una contrasena encriptada
+        :param plain_password - Contrasena en texto plano
+        :param encrypted_password - Contrasena encriptada
+        :returns True - Si coinciden, de lo contrario False.
+    """
+    @classmethod
+    def _verify_password(
+        cls, 
+        plain_password: str or bytes, 
+        encrypted_password: str or bytes
+    ) -> bool:
+        return cls.__password_ctx__.verify(
+            plain_password, 
+            encrypted_password
+        )
     
-    def _create_new_password(self, password_lenght: int=8):
+    """
+        :classmethod _create_new_password - Crea una nueva contrasena con caracteres aleatorios
+        :param password_length - Determina la cantidad de caracteres que tendra la contrasena
+        :returns - La nueva contrasena generada
+    """
+    @classmethod
+    def _create_new_password(cls, password_length: int=8):
         import random
         CHARACTERS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890@~+-*"
         new_password: str = ""
-        for i in range(password_lenght):
+        for i in range(password_length):
             rand_choice: str = random.choice(CHARACTERS)
             new_password += rand_choice
         return new_password

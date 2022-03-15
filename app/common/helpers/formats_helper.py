@@ -47,3 +47,70 @@ NOTIFY_FORMAT = """
         </div>
     </center>
 """
+
+REGISTER_USER_FORMAT = """
+    <center>
+        <div style="padding: 0%;
+            margin: 0%;
+            width: 75%;
+            height: 100%;
+            border: 1px solid rgba(0,0,0,0.25);
+            padding: 20px;
+            border-radius: 15px;
+        >
+            <img style="width: 75%; float: left; margin-left: 16%;"
+            src="https://i.imgur.com/ezOUjf5.png" alt="Company logo">
+            <br style="clear: both;">
+            <center>
+            <h1 style="font-weight: 400;">
+                Hola <strong>{0}</strong>
+            </h1> 
+            <h2 style="font-weight: 400; font-size:24px;"><br>¡Gracias por registrarte en Jersey Shop!</h2> <h2 style="font-weight: 400;">Sólo falta un último paso, y, con esto, podrás acceder a las <strong>compras online</strong> y <strong>contenido único para tí</strong> 
+                <br>
+                <br>
+                <a style="color: white;
+                        padding: 10px;
+                        border-radius: 50px;
+                        background-color: rgb(10, 137, 255);
+                        font-style: none;
+                        text-decoration: none;
+                        font-size: 1.3rem;"
+                    href="http://localhost:8000/auth/verifyAccount?token={1}">Verificar cuenta</a>
+                </h2>
+            </center>
+        </div>
+    </center>
+"""
+
+PASSWORD_RECOVERY_FORMAT = """
+    <center>
+        <div style="padding: 0%;
+            margin: 0%;
+            width: 75%;
+            height: 100%;
+            border:1px solid rgba(0,0,0,0.25);
+            padding: 24px;
+            border-radius: 25px;
+        >
+            <img style="width: 75%;
+                        float: left;
+                        margin-left: 16%;"
+                src="https://i.imgur.com/ezOUjf5.png" alt="Company logo">
+            <br style="clear: both;">
+            <center>
+            <h1 style="font-weight: 400;">Hola <strong>{0}</strong></h1> <h2 style="font-weight: 400; font-size:24px;"><br>¿Parece que intentas recuperar tú contraseña?</h2>
+            <h2 style="font-weight: 400;">A continuación, creamos una nueva para tí <br><br>
+                <span
+                style="color: white;
+                    padding: 10px;
+                    border-radius: 0;
+                    background-color: rgb(10, 137, 255);
+                    font-style: none;
+                    text-decoration: none;
+                    font-size: 1.3rem;"
+                ">{1}</span>
+            </h2>
+            </center>
+        </div>
+    </center>
+"""

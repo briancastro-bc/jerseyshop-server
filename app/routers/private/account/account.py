@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import User
 from app.core.http import HttpResponseOK
-from app.core.dependency import get_current_user, get_session
+from app.core.dependency import Dependency
 from app.common.models import UserResponseModel
 
 from .account_service import AccountService
@@ -19,14 +19,23 @@ class AccountController:
         self.account_service = AccountService()
     
     @router.get('/', response_model=UserResponseModel, status_code=200)
-    async def my_account(self, current_user: User=Depends(get_current_user), db: AsyncSession=Depends(get_session)):
-        user: User = await self.account_service.my_account(current_user, db)
-        userResponse = UserResponseModel(**user.__dict__)
+    async def account(
+        self, 
+        current_user: User=Depends(Dependency.get_user(
+            current=True
+        )), 
+        session: AsyncSession=Depends(Dependency.get_session)
+    ):
+        user: User = await AccountService.get_user_data(
+            user=current_user,
+            session=session
+        )
+        data = UserResponseModel(**user.__dict__)
         if user:
             return HttpResponseOK({
                 "status": "success",
                 "data": {
-                    "user": userResponse
+                    "user": data
                 }
             }).response()
         return "Account works"

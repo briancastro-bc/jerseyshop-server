@@ -76,26 +76,28 @@ class Dependency(object):
                 await session.close()
     
     @classmethod
-    async def get_user(cls, current: bool, id: str=None) -> User:
-        if current:
-            payload: Any = cls.get_payload()
-            if type(payload) is dict or None:
-                raise HTTPException(
-                    401,
-                    {
-                        "status": "fail",
-                        "data": {
-                            "message": payload.get('message') if payload is not None else "Token is missing"
+    def get_user(cls, current: bool, id: str=None) -> User:
+        async def _get_user():
+            if current:
+                payload: Any = cls.get_payload()
+                if type(payload) is dict or None:
+                    raise HTTPException(
+                        401,
+                        {
+                            "status": "fail",
+                            "data": {
+                                "message": payload.get('message') if payload is not None else "Token is missing"
+                            }
                         }
-                    }
-                )
-            id = payload['sub']
-        user: User = await cls.session.get(User, id)
-        return user
+                    )
+                id = payload['sub']
+            user: User = await cls.session.get(User, id)
+            return user
+        return _get_user
     
     @classmethod
     async def get_payload(cls, authorization: str=Header(None)):
-        if authorization or authorization is not 'null':
+        if authorization:
             access_token: str = authorization.split(' ')[1]
             payload: Any = JwtService.decode(
                 encoded=access_token, 
