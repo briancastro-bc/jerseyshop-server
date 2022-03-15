@@ -1,6 +1,5 @@
 from typing import Dict, Any, List
 from fastapi import Depends
-from flask import session
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import Room

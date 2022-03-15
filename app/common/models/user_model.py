@@ -18,7 +18,7 @@ class UserBase(APIModel):
     password: str = Field(
         ...,
         max_length=24,
-        min_length=9
+        min_length=8
     )
     
     @validator('email', pre=True, always=True)
