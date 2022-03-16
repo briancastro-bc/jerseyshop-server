@@ -26,6 +26,7 @@ class SupportNamespace(socketio.AsyncNamespace):
         print(environ)
         await self.save_session(sid, {
             'operating_sys': environ['HTTP_SEC_CH_UA_PLATFORM'],
+            'sid': sid
         })
     
     """
@@ -129,3 +130,5 @@ class SupportNamespace(socketio.AsyncNamespace):
     """
     async def on_disconnect(self, sid: str):
         print('User disconnected: {0}'.format(sid))
+        async with self.session(sid) as session:
+            del session['sid']
