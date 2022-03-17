@@ -3,7 +3,7 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import Room
-from app.core.dependency import Dependency
+from app.core.dependency import get_session
 
 from .support_service import SupportRoomService
 
@@ -21,9 +21,13 @@ class SupportNamespace(socketio.AsyncNamespace):
     """
         :event connect - Se emite cuando hay un nuevo socket conectandose.
     """
-    async def on_connect(self, sid: str, environ: Any):
-        print('User connected: {0}'.format(sid))
+    async def on_connect(
+        self, 
+        sid: str, 
+        environ: Any
+    ):
         print(environ)
+        print('User connected: {0}'.format(sid))
         await self.save_session(sid, {
             'operating_sys': environ['HTTP_SEC_CH_UA_PLATFORM'],
             'sid': sid
@@ -33,12 +37,20 @@ class SupportNamespace(socketio.AsyncNamespace):
         :event create_room - Se emite cuando se crea una nueva sala y agrega la misma a una lista de salas.
         :emit room_exist - En caso de que la sala ya exista.
     """
-    async def on_create_room(self, sid: str, data: Dict[str, Any]):
+    async def on_create_room(
+        self, 
+        sid: str, 
+        data: Dict[str, Any],
+    ):
         if data['room'] in self.rooms:
             await self.emit('room_exist', {
                 "message": "La sala que intenta crear ya se encuentra activa"
             })
             return
+        await SupportRoomService.change_room_status(
+            is_active=True,
+            room=data['room'],
+        )
         self.rooms.append(data['room'])
         await self.save_session(sid, {
             'room': data['room']
@@ -119,10 +131,15 @@ class SupportNamespace(socketio.AsyncNamespace):
             })
             return
         self.leave_room(sid=sid, room=data['room'])
-        await self.close_room(room=data['room'])
-        self.rooms.remove(data['room'])
+        async with self.session(sid) as session:
+            await SupportRoomService.change_room_status(
+                is_active=False,
+                room=session['room']
+            )
+            await self.close_room(room=session['room'])
+            self.rooms.remove(session['room'])
         await self.emit('room_removed', {
-            "message": "La sala ha sido inactivada"
+            "message": "La sala ha pasado a modo offline"
         })
         
     """

@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import Room, User
 from app.core.http import HttpResponseBadRequest, HttpResponseCreated, HttpResponseNotFound, HttpResponseOK
-from app.core.dependency import get_current_user, get_session
+from app.core.dependency import get_session, get_current_user, Dependency
 from app.common.models import RoomCreate, RoomModel
 
 from .room_service import RoomService
@@ -15,12 +15,20 @@ router = InferringRouter()
 @cbv(router)
 class RoomsController:
     
-    def __init__(self) -> None:
-        self.room = RoomService()
-    
     @router.get('/', response_model=RoomModel, status_code=200)
-    async def get_all(self, db: AsyncSession=Depends(get_session)):
-        rooms: Room = await self.room.get_all(db)
+    async def get_all(
+        self,
+        order_by: int=Query(
+            2,
+            title='Ordenamiento',
+            description='Forma en la que se ordenaran las salas'
+        ),
+        session: AsyncSession=Depends(Dependency.get_session)
+    ):
+        rooms: list[Room] = await RoomService.get_all_protected(
+            order_by=order_by,
+            session=session
+        )
         if rooms:
             return HttpResponseOK({
                 "status": "success",
@@ -36,13 +44,24 @@ class RoomsController:
         }).response()
     
     @router.get('/{code}', response_model=RoomModel, status_code=200)
-    async def get_by_code(self, code: str=Path(None, title="Get room by code"), db: AsyncSession=Depends(get_session)):
-        db_room: Room = await self.room.get_by_code(code, db)
-        if db_room:
+    async def get_by_code(
+        self, 
+        code: str=Path(
+            None, 
+            title='By code',
+            description='Get room by code'
+        ), 
+        session: AsyncSession=Depends(Dependency.get_session)
+    ):
+        room: Room = await RoomService.get_by_code(
+            code=code,
+            session=session
+        )
+        if room:
             return HttpResponseOK({
                 "status": "success",
                 "data": {
-                    "room": db_room
+                    "room": room
                 }
             }).response()
         return HttpResponseNotFound({
@@ -53,9 +72,18 @@ class RoomsController:
         }).response()
     
     @router.post('/create', response_model=RoomCreate, status_code=201)
-    async def create(self, room: RoomCreate, db: AsyncSession=Depends(get_session), current_user: User=Depends(get_current_user)):
-        room: Room = await self.room.create(room, db, current_user)
-        if room:
+    async def create(
+        self, 
+        room: RoomCreate, 
+        current_user: User=Depends(get_current_user),
+        session: AsyncSession=Depends(get_session), 
+    ):
+        new_room: Room = await RoomService.create_one(
+            room=room,
+            current_user=current_user,
+            session=session
+        )
+        if new_room:
             return HttpResponseCreated({
                 "status": "success",
                 "data": {

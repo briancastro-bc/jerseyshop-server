@@ -1,6 +1,5 @@
 from fastapi import HTTPException
-
-from sqlalchemy import delete, select, update
+from sqlalchemy import delete, select, update, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import Room, User
@@ -8,45 +7,89 @@ from app.common.models import RoomCreate, RoomModel, RoomUpdatePartial
 
 class RoomService:
     
-    def __init__(self) -> None:
-        pass
-    
     """
-        :method get_all - Toma todas las salas de soporte que hayan en la base de datos.
+        :method get_all_public - Toma todas las salas de soporte que hayan en la base de datos.
     """
-    async def get_all(self, db: AsyncSession):
+    @classmethod
+    async def get_all_public(
+        cls,
+        session: AsyncSession
+    ) -> list[Room]:
         try:
-            query = await db.execute(select(Room).where(Room.is_active == True).order_by(Room.name))
-            db_rooms = query.scalars().fetchall()
-            if not db_rooms:
-                return None
-            return db_rooms
-        except Exception:
+            result = await session.execute(
+                select(Room).where(
+                    Room.is_active == True
+                ).order_by(Room.name)
+            )
+            rooms = result.unique().scalars().fetchall()
+            return rooms
+        except Exception as e:
             return None
     
+    @classmethod
+    async def get_all_protected(
+        cls,
+        order_by: int,
+        session: AsyncSession
+    ) -> list[Room]:
+        try:
+            result = await session.execute(
+                text('SELECT * FROM rooms ORDER BY :order_by').\
+                    bindparams(order_by=order_by)
+            )           
+            rooms: list[Room] = result.all()
+            return rooms
+        except Exception as e:
+            raise HTTPException(
+                400,
+                {
+                    "status": "fail",
+                    "data": {
+                        "message": "No pudimos mostrar las salas disponibles"
+                    }
+                }
+            )
+
     """
         :method get_one - Me devuelve una sala de soporte especificada por código.
         :params code - Especifica el codigo de la sala.
     """
-    async def get_by_code(self, code: str, db: AsyncSession):
+    @classmethod
+    async def get_by_code(
+        cls, 
+        code: str, 
+        session: AsyncSession
+    ) -> Room:
         try:
-            query = await db.execute(select(Room).where(Room.code == code))
-            db_room = query.scalars().first()
-            if db_room:
-                return db_room
-            return None
+            result = await session.execute(
+                select(Room).where(
+                    Room.code == code
+                )
+            )
+            room = result.scalars().first()
+            return room
         except Exception:
             return None
     
     """
-        :method create - Permite crear una nueva sala de soporte en la base de datos.
+        :method create_one - Permite crear una nueva sala de soporte en la base de datos.
         :param room - Especifica que modelo de datos tendrá una sala en especifico.
     """
-    async def create(self, room: RoomCreate, db: AsyncSession, current_user: User):
-        query = await db.execute(select(Room).where(Room.name == room.name))
-        db_room = query.scalars().first()
-        if not db_room:
-            room_code: str = self._create_room_code()
+    @classmethod
+    async def create_one(
+        cls, 
+        room: RoomCreate, 
+        current_user: User,
+        session: AsyncSession
+    ) -> Room:
+        result = await session.execute(
+            select(Room).where(
+                Room.name == room.name
+            )
+        )
+        existented_room = result.scalars().first()
+        if not existented_room:
+            room_code: str = cls._create_room_code()
             try:
                 new_room = Room(
                     code=room_code,
@@ -54,8 +97,8 @@ class RoomService:
                     limit=room.limit if room.limit is not None else 2,
                     owner=current_user.uid
                 )
-                db.add(new_room)
-                await db.commit()
+                session.add(new_room)
+                await session.commit()
                 return new_room
             except Exception as e:
                 raise HTTPException(
@@ -63,8 +106,7 @@ class RoomService:
                     {
                         "status": "fail",
                         "data": {
-                            "message": "Hubo un error mientras intentabamos crear la sala",
-                            "exception": "{0}".format(e)
+                            "message": "Hubo un error mientras intentabamos crear la sala"
                         }
                     }
                 )
@@ -123,7 +165,8 @@ class RoomService:
     """
         :func _generate_room_code - Genera un código aleatorio de 8 digitos y los separa a la mitad con un guión.
     """
-    def _create_room_code(self):
+    @classmethod
+    def _create_room_code(cls):
         import random
         CHARS = 'abcdefghijklmnopqrstuvwxyz'
         room_code: str = ""

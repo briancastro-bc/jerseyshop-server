@@ -17,10 +17,10 @@ class Room(Base):
     code = Column(CHAR(10), primary_key=True, nullable=False)
     name = Column(CHAR(30), unique=True, nullable=False)
     limit = Column(Integer, nullable=False, default=2)
-    is_active = Column(Boolean, nullable=False, default=True)
+    is_active = Column(Boolean, nullable=False, default=False)
     created_at = Column(TIMESTAMP(timezone=True), default=datetime.datetime.utcnow())
     owner = Column(String(36), ForeignKey('users.uid'), primary_key=True)
-    users = relationship('User', secondary=rooms_users_table, lazy='subquery', backref=backref('rooms', lazy=True))
+    users = relationship('User', secondary=rooms_users_table, lazy='joined', backref=backref('rooms', lazy=True))
     
     def __init__(
         self, 

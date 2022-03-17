@@ -50,11 +50,11 @@ class AdvertisementService:
         try:
             result = await session.execute(
                 text('SELECT * FROM advertisements ORDER BY :order_by ASC LIMIT :limit OFFSET :skip').\
-                bindparams(
-                    order_by=order_by,
-                    limit=limit,
-                    skip=skip
-                )
+                    bindparams(
+                        order_by=order_by,
+                        limit=limit,
+                        skip=skip
+                    )
             )
             advertisements: list[Advertisement] = result.all()
             return advertisements
@@ -82,9 +82,9 @@ class AdvertisementService:
         try:
             result = await session.execute(
                 text('SELECT * FROM advertisements WHERE uid=:uid').\
-                bindparams(
-                    uid=uid
-                )
+                    bindparams(
+                        uid=uid
+                    )
             )
             advertisement: Advertisement = result.first()
             return advertisement

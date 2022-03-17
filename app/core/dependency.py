@@ -1,5 +1,4 @@
 from typing import Any
-
 from fastapi import Depends, Header, HTTPException 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -76,11 +75,15 @@ class Dependency(object):
                 await session.close()
     
     @classmethod
-    def get_user(cls, current: bool, id: str=None) -> User:
+    def get_user(
+        cls, 
+        current: bool, 
+        id: str=None,
+    ) -> User:
         async def _get_user():
             if current:
                 payload: Any = cls.get_payload()
-                if type(payload) is dict or None:
+                if type(payload) is dict or not payload:
                     raise HTTPException(
                         401,
                         {
@@ -90,19 +93,26 @@ class Dependency(object):
                             }
                         }
                     )
+                print(payload['sub'])
                 id = payload['sub']
-            user: User = await cls.session.get(User, id)
-            return user
+            async with cls.get_session() as session:
+                user: User = await session.get(User, id)
+                return user
         return _get_user
     
     @classmethod
-    async def get_payload(cls, authorization: str=Header(None)):
-        if authorization:
-            access_token: str = authorization.split(' ')[1]
-            payload: Any = JwtService.decode(
-                encoded=access_token, 
-                validate=True
-            )
-            return payload
-        pass
+    def get_payload(
+        cls, 
+        authorization: str=Header(
+            None
+        )
+    ):
+        access_token: str = authorization.split(' ')[1] if authorization is not None else None
+        if not access_token or access_token == 'null':
+            return
+        payload: Any = JwtService.decode(
+            encoded=access_token, 
+            validate=True
+        )
+        return payload
         
