@@ -90,7 +90,7 @@ class AdvertisementController:
             }
         }).response()
     
-    @router.post('/create', response_model=AdvertisementCreate, status_code=201)
+    @router.post('/', response_model=AdvertisementCreate, status_code=201)
     async def create(
         self, 
         advertisement: AdvertisementCreate,
@@ -128,7 +128,7 @@ class AdvertisementController:
             }
         }).response()
     
-    @router.put('/update/{uid}', response_model=AdvertisementModel, status_code=201)
+    @router.put('/{uid}', response_model=AdvertisementModel, status_code=201)
     async def update(
         self, 
         advertisement: AdvertisementModel,
@@ -158,7 +158,7 @@ class AdvertisementController:
             }
         }).response()
     
-    @router.patch('/edit/{uid}', response_model=AdvertisementModel, status_code=201)
+    @router.patch('/{uid}', response_model=AdvertisementModel, status_code=201)
     async def edit(
         self,
         advertisement: AdvertisementPartialUpdate,
@@ -188,7 +188,7 @@ class AdvertisementController:
             }
         }).response()
     
-    @router.delete('/delete/{uid}', response_model=None, status_code=204)
+    @router.delete('/{uid}', response_model=None, status_code=200)
     async def delete(
         self, 
         uid: str=Path(
@@ -203,7 +203,13 @@ class AdvertisementController:
             session=session
         )
         if was_deleted:
-            return HttpResponseNotContent().__call__()
+            #return HttpResponseNotContent().__call__()
+            return HttpResponseOK({
+                "status": "success",
+                "data": {
+                    "message": "El anuncio ha sido eliminado"
+                }
+            }).response()
         return HttpResponseBadRequest({
             "status": "fail",
             "data": {
