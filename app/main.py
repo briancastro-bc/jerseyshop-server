@@ -1,13 +1,16 @@
-from app.core import settings, init_models, database
-from app.namespaces import SupportNamespace
+from app.core import init_models, database
+from app.io import create_io_server
 
 from .app import create_application
 
 import socketio
 
 app = create_application()
-io = socketio.AsyncServer(logger=True, cors_allowed_origins=[str(origin) for origin in settings.BACKEND_CORS_ORIGINS], async_mode='asgi', ping_timeout=30000, always_connect=True)
-io_app = socketio.ASGIApp(io, app)
+sio: socketio.AsyncServer = create_io_server()
+io_app = socketio.ASGIApp(
+    sio, 
+    app
+)
 
 @app.on_event('startup')
 async def startup():
@@ -17,6 +20,3 @@ async def startup():
 @app.on_event('shutdown')
 async def shutdown():
     await database.disconnect()
-
-# Register socketio namespaces
-io.register_namespace(SupportNamespace(namespace='/support'))

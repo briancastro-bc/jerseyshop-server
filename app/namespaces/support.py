@@ -147,5 +147,3 @@ class SupportNamespace(socketio.AsyncNamespace):
     """
     async def on_disconnect(self, sid: str):
         print('User disconnected: {0}'.format(sid))
-        async with self.session(sid) as session:
-            del session['sid']

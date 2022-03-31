@@ -19,8 +19,11 @@ class CategoryController:
         self.service = CategoryService()
     
     @router.get('/', response_model=CategoryModel, status_code=200)
-    async def get_all(self, db: AsyncSession=Depends(get_session)):
-        categories: Category = await self.service.get_all(db)
+    async def get_all(
+        self, 
+        session: AsyncSession=Depends(get_session)
+    ):
+        categories: Category = await self.service.get_all(session)
         if categories:
             return HttpResponseOK({
                 "status": "success",

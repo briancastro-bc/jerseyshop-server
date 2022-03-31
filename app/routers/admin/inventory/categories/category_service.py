@@ -7,9 +7,13 @@ from app.common.models import CategoryCreate, CategoryParcialUpdate
 
 class CategoryService:
     
-    async def get_all(self, db: AsyncSession):
+    @classmethod
+    async def get_all(
+        cls, 
+        session: AsyncSession
+    ):
         try:
-            query = await db.execute(select(Category))
+            query = await session.execute(select(Category))
             db_categories = query.scalars().all()
             if db_categories:
                 return db_categories

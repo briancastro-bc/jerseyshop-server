@@ -51,3 +51,10 @@ Criterios de aceptación:
 1. **Las marcas deberían tener una imagen y un nombre para identificarlas fácilmente**  
 
 ### HU-05 ###
+
+Como: **Administrador**  
+Quiero: **Registrar nuevos productos en la tienda, orndenandolos por categoria y adjuntarles el color, la talla, la descripcion, el precio, etc**  
+Para: **Ofrecer los ultimos productos a los usuarios que ingresen al sistema**  
+Criterios de aceptación:  
+
+1. **asd**

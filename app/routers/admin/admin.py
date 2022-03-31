@@ -1,5 +1,4 @@
 from fastapi import Depends
-
 from fastapi_utils.inferring_router import InferringRouter
 from fastapi_utils.cbv import cbv
 

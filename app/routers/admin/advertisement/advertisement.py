@@ -203,7 +203,6 @@ class AdvertisementController:
             session=session
         )
         if was_deleted:
-            #return HttpResponseNotContent().__call__()
             return HttpResponseOK({
                 "status": "success",
                 "data": {
