@@ -2,7 +2,7 @@ from .database import engine, Base, async_session
 from .schemas import Group, Permission
 
 # Create/Drop all models/migrations in DBM.
-async def init_models():
+async def init():
     async with engine.begin() as conn:
         #await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)

@@ -1,9 +1,8 @@
 from typing import Dict, Any, Optional
-
 from authlib.jose import jwt, errors 
 from authlib.common.encoding import to_bytes, to_unicode
 
-from app.core.http import HttpResponseInternalServerError
+from app.core.http_responses import HttpResponseInternalServerError
 
 from .file import FileService, RSAKeyType
 
@@ -32,23 +31,24 @@ class JwtService:
         return token
         
     @classmethod
-    def decode(cls, encoded: str, validate: Optional[bool] = None):
+    def decode(cls, encoded: str, validate: bool | None):
         key: str = FileService.getRSAKey(RSAKeyType.PRIVATE.value)
         encoded = to_bytes(encoded)
         dot_count = encoded.count(b'.')
-        if dot_count == 2:
-            key = FileService.getRSAKey(RSAKeyType.PUBLIC.value)
         if key is None:
             return dict(message="No se ha provisto una llave firmada (RSA)")
+        if dot_count == 2:
+            key = FileService.getRSAKey(RSAKeyType.PUBLIC.value)
         try:
             payload = jwt.decode(encoded, key)
             if validate:
                 import datetime
                 payload.validate(leeway=datetime.timedelta(minutes=11).total_seconds())
-            return payload
         except errors.ExpiredTokenError:
             return dict(message="Token expirado")
         except errors.BadSignatureError:
             return dict(message="Token inválido")
         except errors.DecodeError:
             return dict(message="Error al decodificar el token")
+        else:
+            return payload

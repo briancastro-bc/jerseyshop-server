@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import Product, User, Profile
-from app.core.http import HttpResponseBadRequest, HttpResponseCreated, HttpResponseNotContent, HttpResponseNotFound, HttpResponseOK
+from app.core.http_responses import HttpResponseBadRequest, HttpResponseCreated, HttpResponseNotContent, HttpResponseNotFound, HttpResponseOK
 from app.core.dependency import get_session
 from app.common.services import EmailService
 from app.common.models import ProductCreate, ProductModel, ProductPartialUpdate

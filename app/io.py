@@ -1,7 +1,6 @@
-from app import namespaces
-from app.core import settings
-
 import socketio
+from .core import settings
+from .namespaces import SupportNamespace
 
 def create_io_server() -> socketio.AsyncServer:
     sio = socketio.AsyncServer(
@@ -11,10 +10,12 @@ def create_io_server() -> socketio.AsyncServer:
         ping_timeout=100000,
         always_connect=True,
         cookie='io_session',
-        cors_allowed_origins=[str(origin) for origin in settings.BACKEND_CORS_ORIGINS],
+        cors_allowed_origins=[str(origin) for origin in settings.SERVER_CORS_ORIGINS],
         cors_credentials=True,
     )
     
-    sio.register_namespace(namespaces.SupportNamespace(namespace='/support'))
+    sio.register_namespace(SupportNamespace(
+        namespace='/support'
+    ))
     
     return sio

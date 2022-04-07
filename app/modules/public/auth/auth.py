@@ -1,19 +1,18 @@
+import datetime
 from fastapi import HTTPException, BackgroundTasks, Request, Query, Depends, Body
 from fastapi_utils.cbv import cbv
 from fastapi_utils.inferring_router import InferringRouter
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from .auth_service import AuthService
+
 from app.core import User, Profile, settings
-from app.core.dependency import get_session, get_group, Dependency
-from app.core.http import HttpResponseBadRequest, HttpResponseCreated, HttpResponseOK, HttpResponseUnauthorized
+from app.core.dependency import get_session, get_group
+from app.core.http_responses import HttpResponseBadRequest, HttpResponseCreated, HttpResponseOK, HttpResponseUnauthorized
 from app.common.services import JwtService, EmailService, OAuth2Service
 from app.common.models import UserCreate, UserBase, UserRecovery, RefreshToken, UserResponseModel
 from app.common.helpers import REGISTER_USER_FORMAT, PASSWORD_RECOVERY_FORMAT
-
-from .auth_service import AuthService
-
-import datetime
 
 router = InferringRouter()
 
@@ -38,7 +37,7 @@ class AuthController:
         self, 
         user: UserCreate, 
         background_tasks: BackgroundTasks, 
-        session: AsyncSession=Depends(Dependency.get_session)
+        session: AsyncSession=Depends(get_session)
     ):
         new_user: User = await AuthService.create_user(
             user=user,
@@ -79,7 +78,7 @@ class AuthController:
     async def login(
         self, 
         user: UserBase, 
-        session: AsyncSession=Depends(Dependency.get_session)
+        session: AsyncSession=Depends(get_session)
     ):
         existented_user: User = await AuthService.verify_user(
             user=user,
@@ -157,18 +156,20 @@ class AuthController:
             }
         }).response()
     
-    @router.get('/verifyAccount', response_model=None, status_code=200)
+    @router.get('/verifyAccount/', response_model=None, status_code=200)
     async def verify_account(
-        cls, 
+        self, 
         token: str=Query(
-            None, 
-            alias='JWT',
+            ..., 
             title='Token',
             description='Token enviado por parametros para verificar al usuario',
         ), 
-        session: AsyncSession=Depends(Dependency.get_session)
+        session: AsyncSession=Depends(get_session)
     ):
-        payload = JwtService.decode(encoded=token, validate=False)
+        payload = JwtService.decode(
+            encoded=token, 
+            validate=False
+        )
         if type(payload) is dict:
             return HttpResponseUnauthorized({
                 "status": "fail",
@@ -199,7 +200,7 @@ class AuthController:
         self, 
         user: UserRecovery, 
         background_tasks: BackgroundTasks, 
-        session: AsyncSession=Depends(Dependency.get_session)
+        session: AsyncSession=Depends(get_session)
     ):
         data: dict = await AuthService.password_recovery(
             email=user.email,

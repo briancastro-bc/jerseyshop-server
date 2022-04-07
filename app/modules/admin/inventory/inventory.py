@@ -3,7 +3,7 @@ from fastapi_utils.inferring_router import InferringRouter
 from fastapi_utils.cbv import cbv
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.http import HttpResponseNotFound
+from app.core.http_responses import HttpResponseNotFound
 from app.core.dependency import get_session
 from app.common.services import FileService, FileType
 

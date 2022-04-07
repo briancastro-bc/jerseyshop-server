@@ -3,12 +3,12 @@ from fastapi_utils.inferring_router import InferringRouter
 from fastapi_utils.cbv import cbv
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core import User
-from app.core.http import HttpResponseOK
-from app.core.dependency import Dependency
-from app.common.models import UserResponseModel
-
 from .account_service import AccountService
+
+from app.core import User
+from app.core.http_responses import HttpResponseOK
+from app.core.dependency import get_session, get_user
+from app.common.models import UserResponseModel
 
 router = InferringRouter()
 
@@ -21,10 +21,10 @@ class AccountController:
     @router.get('/', response_model=UserResponseModel, status_code=200)
     async def account(
         self, 
-        current_user: User=Depends(Dependency.get_user(
+        current_user: User=Depends(get_user(
             current=True
         )), 
-        session: AsyncSession=Depends(Dependency.get_session)
+        session: AsyncSession=Depends(get_session)
     ):
         user: User = await AccountService.get_user_data(
             user=current_user,

@@ -1,18 +1,17 @@
-from typing import Optional
 from fastapi import Depends, Query, Path, BackgroundTasks
 from fastapi_utils.inferring_router import InferringRouter
 from fastapi_utils.cbv import cbv
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from .advertisement_service import AdvertisementService
+
 from app.core import Advertisement
-from app.core.http import HttpResponseBadRequest, HttpResponseCreated, HttpResponseNotContent, HttpResponseNotFound, HttpResponseOK
-from app.core.dependency import get_session, Dependency
+from app.core.http_responses import HttpResponseBadRequest, HttpResponseCreated, HttpResponseNotContent, HttpResponseNotFound, HttpResponseOK
+from app.core.dependency import get_session
 from app.common.models import AdvertisementCreate, AdvertisementModel, AdvertisementPartialUpdate
 from app.common.services import EmailService
 from app.common.helpers import NOTIFY_FORMAT
-
-from .advertisement_service import AdvertisementService
 
 router = InferringRouter()
 
@@ -25,22 +24,22 @@ class AdvertisementController:
     @router.get('/', response_model=AdvertisementModel, status_code=200)
     async def get_all(
         self, 
-        order_by: Optional[int]=Query(
+        order_by: int|None=Query(
             2,
             title='Orden',
             description='Ordenar anuncios por ...'
         ),
-        limit: Optional[int]=Query(
+        limit: int|None=Query(
             100, 
             title='Limite', 
             description="Limite de anuncios que se deben mostrar"
         ),
-        skip: Optional[int]=Query(
+        skip: int|None=Query(
             0,
             title='Salto',
             description='Salto inicial de los anuncios creados'
         ),
-        session: AsyncSession=Depends(Dependency.get_session)
+        session: AsyncSession=Depends(get_session)
     ):
         advertisements: list[Advertisement] = await AdvertisementService.get_all_protected(
             order_by=order_by,
@@ -70,7 +69,7 @@ class AdvertisementController:
             title='UID',
             description='ID del anuncio el cual se quiere buscar'
         ),
-        session=Depends(Dependency.get_session)
+        session=Depends(get_session)
     ):
         advertisement: Advertisement = await AdvertisementService.get_one_protected(
             uid=uid,
@@ -95,7 +94,7 @@ class AdvertisementController:
         self, 
         advertisement: AdvertisementCreate,
         backgroundTasks: BackgroundTasks,
-        session: AsyncSession=Depends(Dependency.get_session),
+        session: AsyncSession=Depends(get_session),
     ):
         new_advertisement: Advertisement = await AdvertisementService.create_one(
             advertisement=advertisement,
@@ -137,7 +136,7 @@ class AdvertisementController:
             title='Actualizar',
             description='Actualizar un anuncio en su totalidad'
         ),
-        session=Depends(Dependency.get_session)
+        session=Depends(get_session)
     ):
         updated_advertisement: Advertisement = await AdvertisementService.update_one(
             advertisement=advertisement,
@@ -167,7 +166,7 @@ class AdvertisementController:
             title='Editar',
             description='Determina la edicion parcial de un anuncio'
         ),
-        session=Depends(Dependency.get_session)
+        session=Depends(get_session)
     ):
         edited_advertisement: Advertisement = await AdvertisementService.edit_one(
             advertisement=advertisement,

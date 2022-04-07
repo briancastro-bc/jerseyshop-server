@@ -1,4 +1,4 @@
-from abc import ABC, abstractproperty, abstractclassmethod
+from abc import ABC, abstractproperty
 from typing import Dict, Optional, Any
 
 from fastapi.encoders import jsonable_encoder

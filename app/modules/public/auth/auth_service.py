@@ -1,6 +1,7 @@
-from typing import Any
+import time
+import datetime
 from fastapi import HTTPException
-from sqlalchemy import select, insert, text
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from passlib.context import CryptContext
 
@@ -8,8 +9,6 @@ from app.core import User, Group, Profile
 from app.common.models import UserCreate, UserBase
 from app.common.services import JwtService
 from app.core.dependency import get_group
-
-import time, datetime
 
 class AuthService:
     
@@ -31,7 +30,7 @@ class AuthService:
     ) -> User:
         result = await session.execute(
             text('SELECT email FROM users WHERE email = :email').\
-            bindparams(email=user.email)
+                bindparams(email=user.email)
         )
         existented_user = result.first()
         if not existented_user:
@@ -57,7 +56,6 @@ class AuthService:
                 session.add(new_user)
                 new_user.groups.append(group)
                 await session.commit()
-                return new_user
             except Exception as e:
                 raise HTTPException(
                     400,
@@ -67,6 +65,8 @@ class AuthService:
                         "message": "No se pudo registrar el usuario",
                     }
                 })
+            else:
+                return new_user
         return None
     
     """
@@ -99,7 +99,7 @@ class AuthService:
     @classmethod
     async def verify_account(
         cls, 
-        payload: Any, 
+        payload: object, 
         session: AsyncSession
     ) -> User:
         user: User = await session.get(User, payload['sub'])

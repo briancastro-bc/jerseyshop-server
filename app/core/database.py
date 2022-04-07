@@ -1,14 +1,12 @@
-from typing import Dict, Any
-
 from databases import Database
 from sqlalchemy import MetaData
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.ext.declarative import as_declarative, declared_attr
 
-from app.core.config import settings
+from app.core import settings
 
-conventions: Dict[str, Any] = {
+conventions: dict[str, object] = {
     "ix": 'ix_%(column_0_label)s',
     "uq": "uq_%(table_name)s_%(column_0_name)s",
     "ck": "ck_%(table_name)s_%(column_0_name)s",
@@ -19,8 +17,17 @@ conventions: Dict[str, Any] = {
 # Define asynchronous database.
 database = Database(settings.MYSQL_DATABASE_URI)
 metadata = MetaData(naming_convention=conventions)
-engine = create_async_engine(settings.MYSQL_DATABASE_URI, echo=True)
-async_session = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession, autocommit=False, autoflush=False)
+engine = create_async_engine(
+    settings.MYSQL_DATABASE_URI, 
+    #echo=True
+)
+async_session = sessionmaker(
+    bind=engine, 
+    expire_on_commit=False, 
+    class_=AsyncSession, 
+    autocommit=False, 
+    autoflush=False
+)
 
 @as_declarative(metadata=metadata)
 class Base:

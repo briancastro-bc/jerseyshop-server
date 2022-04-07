@@ -1,1 +1,1 @@
-from .support import SupportNamespace
+from .support_namespace import SupportNamespace
