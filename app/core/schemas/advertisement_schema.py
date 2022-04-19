@@ -1,8 +1,8 @@
+import uuid
+import datetime
 from sqlalchemy import Column, String, CHAR, TIMESTAMP, Boolean, DateTime
 
 from app.core.database import Base
-
-import uuid, datetime
 
 class Advertisement(Base):
     __tablename__ = 'advertisements'

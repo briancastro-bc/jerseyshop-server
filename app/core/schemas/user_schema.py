@@ -1,9 +1,9 @@
+import datetime
+import uuid
 from sqlalchemy import CHAR, Column, String, DateTime, Boolean, TIMESTAMP, Table, ForeignKey, Integer
 from sqlalchemy.orm import relationship, backref
 
-from app.core.database import Base, metadata
-
-import datetime, uuid
+from app.core import Base, metadata
 
 user_groups = Table(
     'user_groups',

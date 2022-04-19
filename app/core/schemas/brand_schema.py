@@ -1,4 +1,5 @@
-from sqlalchemy import Column, CHAR, String
+import datetime
+from sqlalchemy import Column, CHAR, String, TIMESTAMP
 from sqlalchemy.orm import relationship
 
 from app.core import Base
@@ -9,6 +10,7 @@ class Brand(Base):
     code = Column(CHAR(15), primary_key=True, nullable=False)
     name = Column(CHAR(50), unique=True, nullable=False)
     logo = Column(String(400), nullable=False)
+    created_at = Column(TIMESTAMP, default=datetime.datetime.utcnow())
     product = relationship('Product')
     
     def __init__(self, name: str, logo: str) -> None:

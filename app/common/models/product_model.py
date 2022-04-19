@@ -1,41 +1,41 @@
-from typing import Optional
-from unicodedata import category
-
-from pydantic import validator
+import datetime
+from pydantic import Field, validator
 from fastapi_utils.api_model import APIModel
 
-from app.core.schemas import Sizes
-
-import datetime
+from .image_model import ImageModel
+from .size_model import SizeModel
+from .color_model import ColorModel
 
 class ProductBase(APIModel):
-    code: Optional[str]
-    name: str
-    photos: str
-    price: float
+    code: str | None = Field(None)
+    name: str = Field(..., max_length=100)
+    price: float = Field(...)
 
 class ProductCreate(ProductBase):
-    stock: int
-    colors: str
-    vat: Optional[int]
-    detail: Optional[str]
-    sizes: Optional[Sizes]
-    category: Optional[str]
-    brand: Optional[str]
-    is_available: Optional[bool] = True
+    description: str = Field(..., max_length=400)
+    stock: int = Field(...)
+    images: list[ImageModel] = Field(...)
+    sizes: list[SizeModel] = Field(...)
+    colors: list[ColorModel] = Field(...)
+    vat: int | None = Field(None)
+    category_id: str = Field(..., max_length=10)
+    sub_category_id: str = Field(..., max_length=10)
+    brand_id: str = Field(..., max_length=15)
 
 class ProductModel(ProductCreate):
-    created_at: Optional[datetime.datetime]
+    is_available: bool | None = Field(None)
+    created_at: datetime.datetime | None = Field(None)
 
 class ProductPartialUpdate(APIModel):
-    name: Optional[str]
-    photos: Optional[str]
-    price: Optional[float]
-    stock: Optional[int]
-    colors: Optional[str]
-    vat: Optional[int]
-    detail: Optional[str]
-    sizes: Optional[Sizes]
-    category: Optional[str]
-    brand: Optional[str]
-    is_available: Optional[bool]
+    # TODO://modify fields.
+    name: str | None
+    photos: str | None
+    price: float | None
+    stock: int | None
+    colors: str | None
+    vat: int | None
+    description: str | None
+    sizes: list[str] | None
+    category: str | None
+    brand: str | None
+    is_available: bool | None

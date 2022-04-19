@@ -61,5 +61,5 @@ class FileService:
         pass
 
     @classmethod
-    def _is_allowed(cls, filename: str or bytes, file_type: FileType):
-        return True if filename.split('.')[1] in cls.__allowed_files__[file_type.value] else False
+    def _is_allowed(cls, filename: str or bytes, file_type: FileType) -> bool:
+        return filename.split('.')[1] in cls.__allowed_files__[file_type.value]

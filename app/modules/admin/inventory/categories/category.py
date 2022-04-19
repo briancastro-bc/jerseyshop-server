@@ -3,12 +3,12 @@ from fastapi_utils.inferring_router import InferringRouter
 from fastapi_utils.cbv import cbv
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from .category_service import CategoryService
+
 from app.core import Category
 from app.core.http_responses import HttpResponseBadRequest, HttpResponseCreated, HttpResponseNotContent, HttpResponseNotFound, HttpResponseOK
 from app.core.dependency import get_session
 from app.common.models import CategoryModel, CategoryCreate, CategoryParcialUpdate
-
-from .category_service import CategoryService
 
 router = InferringRouter()
 
@@ -55,7 +55,7 @@ class CategoryController:
             }
         }).response()
     
-    @router.post('/create', response_model=CategoryCreate, status_code=201)
+    @router.post('/', response_model=CategoryCreate, status_code=201)
     async def create(self, category: CategoryCreate, db: AsyncSession=Depends(get_session)):
         category: Category = await self.service.create(category, db)
         if category:
@@ -72,11 +72,11 @@ class CategoryController:
             }
         }).response()
     
-    @router.put('/update/{code}', response_model=None, status_code=201)
+    @router.put('/{code}', response_model=None, status_code=201)
     async def update(self, code: str):
         pass
     
-    @router.patch('/edit/{code}', response_model=CategoryModel, status_code=201)
+    @router.patch('/{code}', response_model=CategoryModel, status_code=201)
     async def edit(self, code: str, category: CategoryParcialUpdate, db: AsyncSession=Depends(get_session)):
         category_updated: Category = await self.service.edit(code, category, db)
         if category_updated:
@@ -93,7 +93,7 @@ class CategoryController:
             }
         }).response()
     
-    @router.delete('/delete/{code}', response_model=None, status_code=204)
+    @router.delete('/{code}', response_model=None, status_code=204)
     async def delete(self, code: str, db: AsyncSession=Depends(get_session)):
         deleted = await self.service.delete(code, db)
         if deleted:

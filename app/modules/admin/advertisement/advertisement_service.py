@@ -20,7 +20,6 @@ class AdvertisementService:
                 text('SELECT title, hyperlink, description, time_ago, expired_date FROM advertisements WHERE is_active = true ORDER BY time_ago ASC')
             )
             advertisements: list[Advertisement] = result.all()
-            return advertisements
         except:
             raise HTTPException(
                 400,
@@ -31,6 +30,8 @@ class AdvertisementService:
                     }
                 }
             )
+        else:
+            return advertisements
     
     """
         :classmethod get_all_protected - Retorna la informacion de todos los anuncios
@@ -57,7 +58,6 @@ class AdvertisementService:
                     )
             )
             advertisements: list[Advertisement] = result.all()
-            return advertisements
         except Exception as e:
             raise HTTPException(
                 400,
@@ -68,6 +68,8 @@ class AdvertisementService:
                     }
                 }
             )
+        else:
+            return advertisements
 
     """
         :classmethod get_one_protected - Retorna un anuncio especifico del administrador.
@@ -87,7 +89,6 @@ class AdvertisementService:
                     )
             )
             advertisement: Advertisement = result.first()
-            return advertisement
         except Exception as e:
             raise HTTPException(
                 400,
@@ -98,6 +99,8 @@ class AdvertisementService:
                     }
                 }
             )
+        else:
+            return advertisement
     
     """
         :classmethod create_one - Crea un nuevo anuncio en la base de datos.
@@ -115,7 +118,6 @@ class AdvertisementService:
             ))
             session.add(new_advertisement)
             await session.commit()
-            return new_advertisement
         except Exception as e:
             raise HTTPException(400, {
                 "status": "fail",
@@ -124,6 +126,8 @@ class AdvertisementService:
                     "exception": e
                 }
             })
+        else:
+            return new_advertisement
     
     """
         :classmethod update_one - Permite actualizar un anuncio completo
@@ -144,9 +148,10 @@ class AdvertisementService:
                 ).where(Advertisement.uid == uid)
             )
             await session.commit()
-            return updated_advertisement
         except Exception as e:
             return None
+        else:
+            return updated_advertisement
     
     """
         :classmethod edit_one - Permite editar parcialmente un anuncio haciendo que se actualice unicamente un elemento.
@@ -169,9 +174,10 @@ class AdvertisementService:
                 ).where(Advertisement.uid == uid)
             )
             await session.commit()
-            return edited_advertisement
         except Exception as e:
             return None
+        else:
+            return edited_advertisement
     
     """
         :classmethod delete_one - Permite borrar un anuncio especifico.
@@ -188,6 +194,7 @@ class AdvertisementService:
                 delete(Advertisement).where(Advertisement.uid == uid)
             )
             await session.commit()
-            return True
         except Exception as e:
             return False
+        else:
+            return True

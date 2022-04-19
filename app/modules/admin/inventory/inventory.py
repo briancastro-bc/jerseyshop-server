@@ -9,6 +9,7 @@ from app.common.services import FileService, FileType
 
 from .categories import category
 from .products import product
+from .brands import brand
 
 router = InferringRouter()
 
@@ -20,6 +21,12 @@ router.include_router(
 router.include_router(
     router=product.router,
     prefix='/product'
+)
+
+router.include_router(
+    router=brand.router,
+    prefix='/brands',
+    tags=['Brands']
 )
 
 @cbv(router)

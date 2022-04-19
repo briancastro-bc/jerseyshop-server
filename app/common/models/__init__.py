@@ -5,3 +5,5 @@ from .category_model import CategoryBase, CategoryCreate, CategoryModel, Categor
 from .advertisement_model import AdvertisementBase, AdvertisementCreate, AdvertisementModel, AdvertisementPartialUpdate
 from .room_model import RoomBase, RoomCreate, RoomModel, RoomUpdatePartial
 from .product_model import ProductBase, ProductCreate, ProductModel, ProductPartialUpdate
+from .image_model import ImageModel
+from .brand_model import BrandModel

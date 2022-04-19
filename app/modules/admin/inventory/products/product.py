@@ -1,16 +1,17 @@
-from fastapi import BackgroundTasks, Depends, Path
+from fastapi import BackgroundTasks, Depends, Path, Query
 from fastapi_utils.inferring_router import InferringRouter
 from fastapi_utils.cbv import cbv
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core import Product, User, Profile
+from .product_service import ProductService
+
+from app.core import Product, User
 from app.core.http_responses import HttpResponseBadRequest, HttpResponseCreated, HttpResponseNotContent, HttpResponseNotFound, HttpResponseOK
 from app.core.dependency import get_session
 from app.common.services import EmailService
 from app.common.models import ProductCreate, ProductModel, ProductPartialUpdate
 
-from .product_service import ProductService
 
 router = InferringRouter()
 
@@ -18,12 +19,22 @@ router = InferringRouter()
 class ProductController:
     
     def __init__(self) -> None:
-        self.service = ProductService()
         self.email = EmailService()
     
     @router.get('/', response_model=ProductModel, status_code=200)
-    async def get_all(self, db: AsyncSession=Depends(get_session)):
-        products: Product = await self.service.get_all(db)
+    async def get_all(
+        self,
+        order_by: int|None=Query(default=2),
+        limit: int|None=Query(default=100),
+        skip: int|None=Query(default=0),
+        session: AsyncSession=Depends(get_session)
+    ):
+        products: list[Product] = await ProductService.get_all(
+            order_by=order_by,
+            limit=limit,
+            skip=skip,
+            session=session
+        )
         if products:
             return HttpResponseOK({
                 "status": "success",
@@ -39,8 +50,15 @@ class ProductController:
         }).response()
     
     @router.get('/{code}', response_model=ProductModel, status_code=200)
-    async def get_by_code(self, code: str=Path(None, title="Get by product code"), db: AsyncSession=Depends(get_session)):
-        product: Product = await self.service.get_by_code(code, db)
+    async def get_by_code(
+        self, 
+        code: str=Path(..., title="Get by product code"), 
+        session: AsyncSession=Depends(get_session)
+    ):
+        product: Product = await ProductService.get(
+            code=code,
+            session=session
+        )
         if product:
             return HttpResponseOK({
                 "status": "success",
@@ -55,11 +73,19 @@ class ProductController:
             }
         }).response()
     
-    @router.post('/create', response_model=ProductCreate, status_code=201)
-    async def create(self, product: ProductCreate, background_task: BackgroundTasks, db: AsyncSession=Depends(get_session)):
-        product: Product = await self.service.create(product, db)
-        if product:
-            query = await db.execute(
+    @router.post('/', response_model=ProductCreate, status_code=201)
+    async def create(
+        self, 
+        product: ProductCreate, 
+        background_task: BackgroundTasks, 
+        session: AsyncSession=Depends(get_session)
+    ):
+        created_product: Product = await ProductService.create(
+            product=product,
+            session=session
+        )
+        if created_product:
+            query = await session.execute(
                 select(User.email)
                 .where(User.accept_advertising == True)
             )
@@ -96,7 +122,7 @@ class ProductController:
                     </center>
                 </div>
                 </center>
-            """.format(product.name, product.code)
+            """.format(created_product.name, created_product.code)
             background_task.add_task(
                 self.email.send_email,
                 emails,
@@ -117,19 +143,23 @@ class ProductController:
             }
         }).response()
     
-    @router.put('/update/{code}', response_model=ProductModel, status_code=201)
+    @router.put('/{code}', response_model=ProductModel, status_code=201)
     async def update(self, product: ProductModel, code: str=Path(None, title="Update product by code")):
         pass
     
-    @router.patch('/edit/{code}', response_model=ProductModel, status_code=201)
+    @router.patch('/{code}', response_model=ProductModel, status_code=201)
     async def edit(
         self, 
         product: ProductPartialUpdate, 
-        code: str=Path(None, title="Edit product by code"), 
-        db: AsyncSession=Depends(get_session)
+        code: str=Path(..., title="Edit product by code"), 
+        session: AsyncSession=Depends(get_session)
     ):
-        product_updated: Product = await self.service.edit(product, code, db)
-        if product_updated:
+        edited_product: Product = await ProductService.edit(
+            code=code,
+            product=product,
+            session=session
+        )
+        if edited_product:
             return HttpResponseCreated({
                 "status": "success",
                 "data": {
@@ -143,9 +173,16 @@ class ProductController:
             }
         }).response()
     
-    @router.delete('/delete/{code}', response_model=None, status_code=204)
-    async def delete(self, code: str=Path(None, title="Delete product by code"), db: AsyncSession=Depends(get_session)):
-        is_deleted = await self.service.delete(code, db)
+    @router.delete('/{code}', response_model=None, status_code=204)
+    async def delete(
+        self, 
+        code: str=Path(..., title="Delete product by code"), 
+        session: AsyncSession=Depends(get_session)
+    ):
+        is_deleted = await ProductService.delete(
+            code=code,
+            session=session
+        )
         if is_deleted:
             return HttpResponseNotContent().__call__()
         return HttpResponseBadRequest({

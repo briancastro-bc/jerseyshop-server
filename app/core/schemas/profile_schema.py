@@ -1,9 +1,9 @@
+import uuid
+import enum
 from sqlalchemy import Column, ForeignKey, String, CHAR, Enum
 from sqlalchemy.orm import relationship
 
-from app.core.database import Base
-
-import uuid, enum
+from app.core import Base
 
 class Gender(enum.Enum):
     male='m'

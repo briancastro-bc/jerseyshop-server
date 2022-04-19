@@ -1,5 +1,5 @@
 from fastapi import HTTPException
-from sqlalchemy import select, update, delete
+from sqlalchemy import select, update, delete, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import Product
@@ -7,32 +7,60 @@ from app.common.models import ProductModel, ProductPartialUpdate
 
 class ProductService:
     
-    def __init__(self) -> None:
-        pass
-    
-    async def get_all(self, db: AsyncSession):
+    @classmethod
+    async def get_all(
+        cls,
+        *,
+        order_by: int,
+        limit: int,
+        skip: int,
+        session: AsyncSession
+    ) -> list[Product]:
         try:
-            query = await db.execute(select(Product))
-            db_products = query.scalars().fetchall()
-            if db_products:
-                return db_products
-            return None
+            result = await session.execute(
+                text("SELECT * FROM products ORDER BY :order_by ASC LIMIT :limit OFFSET :skip").\
+                    bindparams(
+                        order_by=order_by,
+                        limit=limit,
+                        skip=skip
+                    )
+            )
+            products: list[Product] = result.all()
         except Exception:
-            return None
+            raise HTTPException(
+                400,
+                "No se pudieron mostrar los productos"
+            )
+        else:
+            return products
     
-    async def get_by_code(self, code: str, db: AsyncSession):
+    @classmethod
+    async def get(
+        cls, 
+        code: str, 
+        session: AsyncSession
+    ) -> Product:
         try:
-            query = await db.execute(select(Product).where(Product.code == code))
-            db_product = query.scalars().first()
-            if db_product:
-                return db_product
-            return None
+            result = await session.execute(
+                select(Product).where(Product.code == code)
+            )
+            product: Product = result.scalars().first()
         except Exception:
-            return None
+            raise HTTPException(
+                400,
+                "No se pudo mostrar el producto"
+            )
+        else:
+            return product
     
-    async def create(self, product: ProductModel, db: AsyncSession):
+    @classmethod
+    async def create(
+        cls, 
+        product: ProductModel, 
+        session: AsyncSession
+    ) -> Product:
         try:
-            new_product = Product(
+            """new_product = Product(
                 name=product.name,
                 sizes=product.sizes,
                 stock=product.stock,
@@ -44,10 +72,14 @@ class ProductService:
                 category=product.category,
                 brand=product.brand,
                 is_available=product.is_available
+            )"""
+            new_product = Product(
+                **product.dict(
+                    exclude_unset=True
+                )
             )
-            db.add(new_product)
-            await db.commit()
-            return new_product
+            session.add(new_product)
+            await session.commit()
         except Exception as e:
             raise HTTPException(
                 400,
@@ -59,29 +91,50 @@ class ProductService:
                     }
                 }
             )
+        else:
+            return new_product
     
-    async def update(self):
+    @classmethod
+    async def update(cls):
         pass
     
-    async def edit(self, product: ProductPartialUpdate, code: str, db: AsyncSession):
+    @classmethod
+    async def edit(
+        cls, 
+        code: str,
+        product: ProductPartialUpdate,
+        session: AsyncSession
+    ):
         try:
-            edit_product = await db.execute(
+            edited_product = await session.execute(
                 update(Product)
                 .values(**product.dict(exclude_unset=True))
                 .where(Product.code == code)
             )
-            await db.commit()
-            return edit_product
+            await session.commit()
         except Exception:
-            return None
-    
-    async def delete(self, code: str, db: AsyncSession):
-        try:
-            await db.execute(
-                delete(Product)
-                .where(Product.code == code)
+            raise HTTPException(
+                400,
+                "No se pudo editar el producto"
             )
-            await db.commit()
-            return True
+        else:
+            return edited_product
+    
+    @classmethod
+    async def delete(
+        cls, 
+        code: str, 
+        session: AsyncSession
+    ) -> bool | None:
+        try:
+            await session.execute(
+                delete(Product).where(Product.code == code)
+            )
+            await session.commit()
         except Exception:
-            return None
+            raise HTTPException(
+                400,
+                "No se pudo eliminar el producto"
+            )
+        else:
+            return True
